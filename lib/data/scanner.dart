@@ -148,7 +148,7 @@ Rules:
     try {
       final json = jsonDecode(utf8.decode(r.bodyBytes)) as Map<String, dynamic>;
       final parts = json['candidates'][0]['content']['parts'] as List;
-      return parse(parts.map((p) => p['text'] ?? '').join());
+      return parse(parts.where((p) => p['thought'] != true).map((p) => p['text'] ?? '').join());
     } catch (_) {
       throw const ScanException('The scanner gave an answer the app couldn’t read. Try again.');
     }
