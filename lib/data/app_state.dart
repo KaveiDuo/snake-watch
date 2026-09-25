@@ -122,7 +122,7 @@ enum GpsState { off, searching, onCampus, offCampus, denied }
 
 class AppState extends ChangeNotifier {
   Role role = Role.none;
-  bool mapDark = true;
+  bool mapDark = false; // light map first; the moon button switches to dark
   bool filterOpenOnly = false;
   final String authorityHostel = 'Kameng Hostel';
   final String studentName = 'Ananya Sharma';
