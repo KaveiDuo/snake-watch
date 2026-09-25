@@ -1,17 +1,20 @@
-# snake_watch
+# Onestop · Snake Watch (demo)
 
-Onestop · Snake Watch (demo)
+A standalone demo of the **Snake Watch** add-on for IIT Guwahati's Onestop app: report snake sightings on a campus map, see nearby reports, and let the hostel authority mark areas safe.
 
-## Getting Started
+- **Open it in your browser:** https://kaveiduo.github.io/snake-watch/
+- **Android app (APK):** https://github.com/KaveiDuo/snake-watch/releases/latest/download/SnakeWatch.apk
 
-This project is a starting point for a Flutter application.
+This is a design demo built from the Figma prototype. It uses example data only: reports stay on your own device and reset when the app restarts, the snake scanner result is simulated, and there is no real sign-in.
 
-A few resources to get you started if this is your first Flutter project:
+## Build
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+```bash
+flutter pub get
+flutter build apk --release
+flutter build web --release --base-href /snake-watch/app/
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+On the original Windows PC use `build_apk.ps1`, which works around a Java temp-folder issue.
+
+Snake photos: Wikimedia Commons (credits in the in-app Snake Guide). Map © OpenStreetMap contributors.
