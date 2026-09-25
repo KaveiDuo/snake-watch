@@ -783,102 +783,169 @@ class ReportedScreen extends StatefulWidget {
   State<ReportedScreen> createState() => _ReportedScreenState();
 }
 
-class _ReportedScreenState extends State<ReportedScreen> with SingleTickerProviderStateMixin {
+class _ReportedScreenState extends State<ReportedScreen> with TickerProviderStateMixin {
   late final AnimationController _a = AnimationController(vsync: this, duration: const Duration(milliseconds: 700))..forward();
+  late final AnimationController _ripple = AnimationController(vsync: this, duration: const Duration(milliseconds: 2400))..repeat();
 
   @override
   void dispose() {
     _a.dispose();
+    _ripple.dispose();
     super.dispose();
   }
+
+  /// Green check with two rings and a soft glow (matches Figma "13 · Sighting reported").
+  Widget _hero() => SizedBox(
+    width: 230,
+    height: 230,
+    child: Stack(
+      alignment: Alignment.center,
+      children: [
+        // A faint ring that keeps rippling outward
+        AnimatedBuilder(
+          animation: _ripple,
+          builder: (_, _) {
+            final t = Curves.easeOut.transform(_ripple.value);
+            return Container(
+              width: 150 + 80 * t,
+              height: 150 + 80 * t,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: C.green.withValues(alpha: 0.35 * (1 - t)), width: 1.5),
+              ),
+            );
+          },
+        ),
+        Container(
+          width: 200,
+          height: 200,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: C.green.withValues(alpha: 0.16), width: 1.5),
+          ),
+        ),
+        Container(
+          width: 156,
+          height: 156,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: C.green.withValues(alpha: 0.06),
+            border: Border.all(color: C.green.withValues(alpha: 0.38), width: 2),
+          ),
+        ),
+        ScaleTransition(
+          scale: CurvedAnimation(parent: _a, curve: Curves.elasticOut),
+          child: Container(
+            width: 112,
+            height: 112,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: C.green,
+              boxShadow: [BoxShadow(color: C.green.withValues(alpha: 0.45), blurRadius: 36, spreadRadius: 2)],
+            ),
+            child: const Icon(Icons.check_rounded, color: C.greenInk, size: 56),
+          ),
+        ),
+      ],
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
     final r = widget.report;
     return DarkPage(
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Column(
-          children: [
-            const Spacer(flex: 3),
-            ScaleTransition(
-              scale: CurvedAnimation(parent: _a, curve: Curves.elasticOut),
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: C.green.withValues(alpha: 0.15),
-                  border: Border.all(color: C.green.withValues(alpha: 0.4), width: 2),
-                ),
-                alignment: Alignment.center,
+      body: Stack(
+        children: [
+          // Soft green glow behind the check
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Align(
+                alignment: const Alignment(0, -0.32),
                 child: Container(
-                  width: 76,
-                  height: 76,
-                  decoration: const BoxDecoration(shape: BoxShape.circle, color: C.green),
-                  child: const Icon(Icons.check_rounded, color: C.greenInk, size: 44),
+                  width: 520,
+                  height: 520,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(colors: [C.green.withValues(alpha: 0.30), C.green.withValues(alpha: 0.0)]),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 28),
-            Text('Sighting reported', style: ft(28, w: 700)),
-            const SizedBox(height: 10),
-            Text(
-              'Students nearby have been notified and can see your pin on Snake Watch.',
-              textAlign: TextAlign.center,
-              style: ft(14.5, color: C.muted, height: 1.45),
-            ),
-            const Spacer(flex: 4),
-            // Who handles it: the hostel's authority (in their console), or
-            // nobody for open areas, where the pin expires by itself.
-            Panel(
-              border: r.covered ? const Color(0xFF245A36) : null,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(r.covered ? Icons.verified_user_outlined : Icons.schedule_rounded, color: C.green, size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(r.covered ? 'Sent to the ${r.place} authority' : 'Open area · no hostel authority', style: ft(13.5, w: 600)),
-                        const SizedBox(height: 4),
-                        Text(
-                          r.covered
-                              ? 'It’s in their Snake Watch console now. They’ll check the area and mark it safe, and you’ll be notified.'
-                              : 'No hostel authority covers this spot. The pin clears itself from Snake Watch after 2–3 days.',
-                          style: ft(12.5, color: C.muted, height: 1.4),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
+          ),
+          Padding(
+            // Extra bottom space so the buttons sit comfortably above the edge.
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
+            child: Column(
               children: [
-                Expanded(
-                  child: Btn('Home', kind: BtnKind.ghost, height: 48, onTap: () => Navigator.popUntil(context, (r) => r.isFirst)),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Btn(
-                    'Snake Watch',
-                    kind: BtnKind.ghost,
-                    height: 48,
-                    onTap: () {
-                      final nav = Navigator.of(context);
-                      nav.popUntil((r) => r.isFirst);
-                      nav.push(MaterialPageRoute(builder: (_) => const SnakeWatchScreen()));
-                    },
+                const Spacer(flex: 4),
+                _hero(),
+                const SizedBox(height: 22),
+                Text('Sighting reported', style: ft(30, w: 700)),
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    'Students nearby have been notified and can see your pin on Snake Watch.',
+                    textAlign: TextAlign.center,
+                    style: ft(14.5, color: C.muted, height: 1.45),
                   ),
+                ),
+                const Spacer(flex: 3),
+                // Who handles it: the hostel's authority (in their console), or
+                // nobody for open areas, where the pin expires by itself.
+                Panel(
+                  border: r.covered ? const Color(0xFF245A36) : null,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(r.covered ? Icons.verified_user_outlined : Icons.schedule_rounded, color: C.green, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              r.covered ? 'Sent to the ${r.place} authority' : 'Open area · no hostel authority',
+                              style: ft(13.5, w: 600),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              r.covered
+                                  ? 'It’s in their Snake Watch console now. They’ll check the area and mark it safe, and you’ll be notified.'
+                                  : 'No hostel authority covers this spot. The pin clears itself from Snake Watch after 2–3 days.',
+                              style: ft(12.5, color: C.muted, height: 1.4),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Btn('Home', kind: BtnKind.ghost, height: 48, onTap: () => Navigator.popUntil(context, (r) => r.isFirst)),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Btn(
+                        'Snake Watch',
+                        kind: BtnKind.ghost,
+                        height: 48,
+                        onTap: () {
+                          final nav = Navigator.of(context);
+                          nav.popUntil((r) => r.isFirst);
+                          nav.push(MaterialPageRoute(builder: (_) => const SnakeWatchScreen()));
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
