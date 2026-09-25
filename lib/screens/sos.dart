@@ -14,7 +14,7 @@ class SosScreen extends StatefulWidget {
 }
 
 class _SosScreenState extends State<SosScreen> with SingleTickerProviderStateMixin {
-  static const hospital = '03612582100';
+  static const hospital = '8277992838';
   late final AnimationController _hold = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))
     ..addStatusListener((st) {
       if (st == AnimationStatus.completed) setState(() => _calling = true);
@@ -110,7 +110,7 @@ class _SosScreenState extends State<SosScreen> with SingleTickerProviderStateMix
       const SizedBox(height: 36),
       _Info(Icons.location_on_outlined, last?.where ?? 'Kameng Hostel', 'Location shared automatically'),
       const SizedBox(height: 10),
-      _Info(Icons.local_hospital_outlined, 'IITG Hospital · 0361 258 2100', '24×7 emergency line'),
+      _Info(Icons.local_hospital_outlined, 'IITG Hospital · 82779 92838', '24×7 emergency line'),
     ],
   );
 
