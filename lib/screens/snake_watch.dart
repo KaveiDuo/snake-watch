@@ -8,67 +8,164 @@ import 'report.dart';
 import 'sighting_detail.dart';
 import 'snake_guide.dart';
 
-class SnakeWatchScreen extends StatelessWidget {
+/// Campus map. Tapping the map only drops a pin (tap again to move it); the
+/// report starts when you press "Report here".
+class SnakeWatchScreen extends StatefulWidget {
   const SnakeWatchScreen({super.key});
+  @override
+  State<SnakeWatchScreen> createState() => _SnakeWatchScreenState();
+}
 
-  void _report(BuildContext context, {Loc? at}) {
+class _SnakeWatchScreenState extends State<SnakeWatchScreen> {
+  Loc? _picked;
+
+  void _report({Loc? at}) {
     AppScope.read(context).startDraft(at: at);
+    setState(() => _picked = null);
     Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    final picked = _picked;
     return DarkPage(
       header: AppHeader(
         'Snake Watch',
         subtitle: s.activeCount == 1 ? '1 active report on campus' : '${s.activeCount} active reports on campus',
-        trailing: RoundButton(Icons.menu_book_outlined,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SnakeGuideScreen()))),
+        trailing: RoundButton(
+          Icons.menu_book_outlined,
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SnakeGuideScreen())),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: Column(children: [
-          Expanded(
-            child: Stack(children: [
-              Positioned.fill(
-                child: CampusMap(
-                  dark: s.mapDark,
-                  reports: s.reports,
-                  onToggleTheme: s.toggleMap,
-                  onTapReport: (r) => Navigator.push(context, MaterialPageRoute(builder: (_) => SightingDetailScreen(report: r))),
-                  onTapMap: (p) => _report(context, at: s.locFromMap(p)),
-                  controlsPadding: const EdgeInsets.fromLTRB(10, 10, 10, 44),
-                  topHint: _Hint('Tap anywhere on the map to report a sighting there', dark: s.mapDark),
-                ),
-              ),
-              Positioned(left: 10, bottom: 10, right: 60, child: _Legend(dark: s.mapDark)),
-            ]),
-          ),
-          const SizedBox(height: 12),
-          Material(
-            color: C.red,
-            borderRadius: BorderRadius.circular(20),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () => _report(context),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 13, 14, 13),
-                child: Row(children: [
-                  const Icon(Icons.add_rounded, color: Colors.white, size: 26),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('Report a sighting', style: ft(17, w: 600, color: Colors.white)),
-                      Text('Uses your current location · you can change it', style: ft(12.5, color: Colors.white.withValues(alpha: 0.85))),
-                    ]),
+        child: Column(
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: CampusMap(
+                      dark: s.mapDark,
+                      reports: s.reports,
+                      onToggleTheme: s.toggleMap,
+                      onTapReport: (r) => Navigator.push(context, MaterialPageRoute(builder: (_) => SightingDetailScreen(report: r))),
+                      onTapMap: (p) => setState(() => _picked = s.locFromMap(p)),
+                      selected: picked?.pos,
+                      showZone: picked != null,
+                      controlsPadding: const EdgeInsets.fromLTRB(10, 10, 10, 44),
+                      topHint: _Hint(
+                        picked == null ? 'Tap the map to drop a pin where you saw a snake' : 'Tap again to move the pin',
+                        dark: s.mapDark,
+                      ),
+                    ),
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: Colors.white),
-                ]),
+                  Positioned(left: 10, bottom: 10, right: 60, child: _Legend(dark: s.mapDark)),
+                ],
               ),
             ),
+            const SizedBox(height: 12),
+            if (picked != null)
+              _PickedCard(
+                loc: picked,
+                onReport: () => _report(at: picked),
+                onCancel: () => setState(() => _picked = null),
+              )
+            else
+              Material(
+                color: C.red,
+                borderRadius: BorderRadius.circular(20),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () => _report(),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 13, 14, 13),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.add_rounded, color: Colors.white, size: 26),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Report a sighting', style: ft(17, w: 600, color: Colors.white)),
+                              Text(
+                                'Uses your current location · you can change it',
+                                style: ft(12.5, color: Colors.white.withValues(alpha: 0.85)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right_rounded, color: Colors.white),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shows where the dropped pin is and starts the report from there.
+class _PickedCard extends StatelessWidget {
+  final Loc loc;
+  final VoidCallback onReport;
+  final VoidCallback onCancel;
+  const _PickedCard({required this.loc, required this.onReport, required this.onCancel});
+
+  @override
+  Widget build(BuildContext context) {
+    final hostel = loc.name.replaceAll(' Hostel', '');
+    return Panel(
+      padding: const EdgeInsets.fromLTRB(14, 12, 6, 14),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(color: loc.covered ? C.greenSoft : const Color(0xFF2A1E0B), shape: BoxShape.circle),
+                child: Icon(
+                  loc.covered ? Icons.location_on_outlined : Icons.park_outlined,
+                  color: loc.covered ? C.green : C.amber,
+                  size: 21,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(loc.covered ? loc.name : 'Open area', style: ft(16, w: 700)),
+                    const SizedBox(height: 2),
+                    Text(
+                      loc.covered
+                          ? 'Inside $hostel premises · the $hostel hostel authority covers this spot'
+                          : 'No hostel authority covers this spot · students nearby are still alerted',
+                      style: ft(12.5, color: C.muted, height: 1.35),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: onCancel,
+                icon: const Icon(Icons.close_rounded, color: C.muted, size: 20),
+                tooltip: 'Remove pin',
+              ),
+            ],
           ),
-        ]),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Btn('Report here', kind: BtnKind.danger, icon: Icons.add_rounded, height: 48, onTap: onReport),
+          ),
+        ],
       ),
     );
   }
@@ -80,14 +177,18 @@ class _Hint extends StatelessWidget {
   const _Hint(this.text, {required this.dark});
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: dark ? const Color(0xE61C1C1C) : const Color(0xF2FFFFFF),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: dark ? C.line2 : const Color(0xFFDDDDDD)),
-        ),
-        child: Text(text, textAlign: TextAlign.center, style: ft(12, color: dark ? C.text : const Color(0xFF222222))),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+    decoration: BoxDecoration(
+      color: dark ? const Color(0xE61C1C1C) : const Color(0xF2FFFFFF),
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: dark ? C.line2 : const Color(0xFFDDDDDD)),
+    ),
+    child: Text(
+      text,
+      textAlign: TextAlign.center,
+      style: ft(12, color: dark ? C.text : const Color(0xFF222222)),
+    ),
+  );
 }
 
 class _Legend extends StatelessWidget {
@@ -111,16 +212,27 @@ class _Legend extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: dark ? C.line2 : const Color(0xFFDDDDDD)),
         ),
-        child: Wrap(spacing: 9, runSpacing: 4, children: [
-          for (final (l, c) in items)
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              l == 'You'
-                  ? Container(width: 8, height: 8, decoration: BoxDecoration(color: c, shape: BoxShape.circle))
-                  : LocationPin(color: c, width: 9),
-              const SizedBox(width: 4),
-              Text(l, style: ft(11, color: dark ? C.text : const Color(0xFF222222))),
-            ]),
-        ]),
+        child: Wrap(
+          spacing: 9,
+          runSpacing: 4,
+          children: [
+            for (final (l, c) in items)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  l == 'You'
+                      ? Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+                        )
+                      : LocationPin(color: c, width: 9),
+                  const SizedBox(width: 4),
+                  Text(l, style: ft(11, color: dark ? C.text : const Color(0xFF222222))),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
