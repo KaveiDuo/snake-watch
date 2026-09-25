@@ -19,10 +19,11 @@ class SnakeWatchScreen extends StatefulWidget {
 class _SnakeWatchScreenState extends State<SnakeWatchScreen> {
   Loc? _picked;
 
-  void _report({Loc? at}) {
+  Future<void> _report({Loc? at}) async {
     AppScope.read(context).startDraft(at: at);
-    setState(() => _picked = null);
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportScreen()));
+    // Keep the pin visible while the report slides in; clear it afterwards.
+    await Navigator.push(context, slideUpRoute(const ReportScreen()));
+    if (mounted) setState(() => _picked = null);
   }
 
   @override
@@ -48,7 +49,8 @@ class _SnakeWatchScreenState extends State<SnakeWatchScreen> {
                   Positioned.fill(
                     child: CampusMap(
                       dark: s.mapDark,
-                      reports: s.reports,
+                      // Areas marked safe drop off the students' map.
+                      reports: s.openReports,
                       onToggleTheme: s.toggleMap,
                       onTapReport: (r) => Navigator.push(context, MaterialPageRoute(builder: (_) => SightingDetailScreen(report: r))),
                       onTapMap: (p) => setState(() => _picked = s.locFromMap(p)),
@@ -200,7 +202,6 @@ class _Legend extends StatelessWidget {
       ('Venomous', const Color(0xFFFF453A)),
       ('Harmless', const Color(0xFF2DD4BF)),
       ('Unsure', C.amber),
-      ('Safe', const Color(0xFF8A8A8A)),
       ('You', C.blue),
     ];
     return Align(

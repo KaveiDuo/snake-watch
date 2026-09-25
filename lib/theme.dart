@@ -63,7 +63,28 @@ ThemeData buildTheme() => ThemeData(
       fontFamily: 'Figtree',
       colorScheme: const ColorScheme.dark(primary: C.green, surface: C.bg),
       splashFactory: InkRipple.splashFactory,
+      // Same smooth screen-to-screen animation on phones and in the browser.
       pageTransitionsTheme: const PageTransitionsTheme(builders: {
         TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+        TargetPlatform.iOS: FadeForwardsPageTransitionsBuilder(),
+        TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
+        TargetPlatform.macOS: FadeForwardsPageTransitionsBuilder(),
+        TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
+        TargetPlatform.fuchsia: FadeForwardsPageTransitionsBuilder(),
       }),
+    );
+
+/// Slides a screen up from the bottom while fading it in (used when a
+/// report starts from a pin on the map).
+Route<T> slideUpRoute<T>(Widget page) => PageRouteBuilder<T>(
+      transitionDuration: const Duration(milliseconds: 380),
+      reverseTransitionDuration: const Duration(milliseconds: 280),
+      pageBuilder: (_, _, _) => page,
+      transitionsBuilder: (_, a, _, child) {
+        final curve = CurvedAnimation(parent: a, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
+        return FadeTransition(
+          opacity: curve,
+          child: SlideTransition(position: Tween(begin: const Offset(0, 0.12), end: Offset.zero).animate(curve), child: child),
+        );
+      },
     );
