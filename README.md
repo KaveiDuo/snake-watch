@@ -7,18 +7,17 @@ A standalone demo of the **Snake Watch** add-on for IIT Guwahati's Onestop app: 
 
 This is a design demo built from the Figma prototype. It uses example data only: reports stay on your own device and reset when the app restarts, and there is no real sign-in.
 
-**Snake scanner:** it identifies photos with Claude AI (model `claude-sonnet-5`) once you paste an Anthropic API key in **Profile → Snake scanner key**. The key is saved only on that device and is never part of the app or this repository. Without a key the scanner shows a demo match.
+**Snake scanner:** it identifies photos with Google Gemini's free tier (`gemini-3.8-flash`, falling back to 3.6 Flash and 3.5 Flash-Lite), using a key added at build time. Anyone can use their own Gemini or Anthropic key instead in **Profile → Snake scanner key**. Results are a guide, not a diagnosis.
 
 ## Build
 
 ```bash
 flutter pub get
 flutter build apk --release
-flutter build web --release --base-href /snake-watch/app/
-cp web/sw_cleanup.js build/web/flutter_service_worker.js && rm build/web/sw_cleanup.js
+./build_web.sh
 ```
 
-The web build doesn't use an offline service worker, so phones always load the latest version. The second web command replaces Flutter's worker with one that removes old caches.
+`build_web.sh` builds the web version without an offline service worker, so phones always load the latest version, and replaces Flutter's worker with one that removes old caches. Both build scripts read the scanner's free Gemini key from `scanner_key.txt`, which is not committed. Without that file, the scanner shows demo matches.
 
 On the original Windows PC use `build_apk.ps1`, which works around a Java temp-folder issue.
 

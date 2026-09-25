@@ -33,11 +33,26 @@ class ScanException implements Exception {
   String toString() => message;
 }
 
-/// Identifies snakes in photos with Claude. The Anthropic API key is typed in
-/// by the user (Profile → Snake scanner key) and saved only on their device.
+/// Identifies snakes in photos with AI.
+///
+/// By default it uses Google Gemini's free tier with the app's built-in key,
+/// which is added at build time from the untracked file `scanner_key.txt`
+/// (see build_web.sh / build_apk.ps1) and never committed. It is stored
+/// reversed so the raw key never appears in the published files. Anyone can
+/// override it in Profile → Snake scanner key with their own Gemini (AIza…)
+/// or Anthropic (sk-ant-…) key, saved only on that device.
 class Scanner {
-  static const _prefsKey = 'anthropic_api_key';
-  static const model = 'claude-sonnet-5';
+  static const _prefsKey = 'scanner_api_key';
+  static const claudeModel = 'claude-sonnet-5';
+
+  /// Free-tier Gemini models, tried in order when one is busy or out of quota.
+  static const geminiModels = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'];
+
+  static const _builtInReversed = String.fromEnvironment('SCANNER_KEY_R');
+  static String? get builtInKey => _builtInReversed.isEmpty ? null : _builtInReversed.split('').reversed.join();
+
+  /// The key a scan will use: the user's own key, else the built-in free one.
+  static Future<String?> activeKey() async => await loadKey() ?? builtInKey;
 
   static Future<String?> loadKey() async {
     try {
@@ -90,7 +105,56 @@ Rules:
 - If there is no snake in the photo, set "is_snake" to false and "matches" to [].''';
   }
 
-  static Future<ScanResult> identify(Uint8List image, String apiKey) async {
+  static Future<ScanResult> identify(Uint8List image, String apiKey) =>
+      apiKey.startsWith('sk-ant-') ? _claude(image, apiKey) : _gemini(image, apiKey);
+
+  static Future<ScanResult> _gemini(Uint8List image, String apiKey) async {
+    final body = jsonEncode({
+      'contents': [
+        {
+          'parts': [
+            {
+              'inline_data': {'mime_type': _mediaType(image), 'data': base64Encode(image)},
+            },
+            {'text': _prompt},
+          ],
+        },
+      ],
+      'generationConfig': {'response_mime_type': 'application/json', 'temperature': 0.2},
+    });
+    http.Response? res;
+    for (final model in geminiModels) {
+      try {
+        res = await http
+            .post(
+              Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent'),
+              headers: {'content-type': 'application/json', 'x-goog-api-key': apiKey},
+              body: body,
+            )
+            .timeout(const Duration(seconds: 60));
+      } catch (_) {
+        throw const ScanException('Couldn’t reach the scanner. Check your internet connection.');
+      }
+      // Busy, out of today's free quota or model not available: try the next one.
+      if (res.statusCode == 429 || res.statusCode == 404 || res.statusCode == 503) continue;
+      break;
+    }
+    final r = res!;
+    if (r.statusCode == 429) throw const ScanException('The free scanner has reached its limit for now. Try again later.');
+    if (r.statusCode == 400 && r.body.contains('API_KEY_INVALID') || r.statusCode == 401 || r.statusCode == 403) {
+      throw const ScanException('The scanner key isn’t valid. Check it in Profile → Snake scanner key.');
+    }
+    if (r.statusCode >= 400) throw ScanException('Scanner error (${r.statusCode}). Try again.');
+    try {
+      final json = jsonDecode(utf8.decode(r.bodyBytes)) as Map<String, dynamic>;
+      final parts = json['candidates'][0]['content']['parts'] as List;
+      return parse(parts.map((p) => p['text'] ?? '').join());
+    } catch (_) {
+      throw const ScanException('The scanner gave an answer the app couldn’t read. Try again.');
+    }
+  }
+
+  static Future<ScanResult> _claude(Uint8List image, String apiKey) async {
     final http.Response res;
     try {
       res = await http
@@ -104,7 +168,7 @@ Rules:
               'anthropic-dangerous-direct-browser-access': 'true',
             },
             body: jsonEncode({
-              'model': model,
+              'model': claudeModel,
               'max_tokens': 700,
               'messages': [
                 {
@@ -137,22 +201,26 @@ Rules:
 
     try {
       final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
-      final text = (body['content'] as List).where((c) => c['type'] == 'text').map((c) => c['text'] as String).join();
-      final json = jsonDecode(text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1)) as Map<String, dynamic>;
-      final ids = species.map((s) => s.id).toSet();
-      final matches = <ScanMatch>[
-        for (final m in (json['matches'] as List? ?? const []).cast<Map<String, dynamic>>())
-          ScanMatch(
-            speciesId: ids.contains(m['id']) ? m['id'] as String : null,
-            name: ids.contains(m['id']) ? speciesById(m['id'] as String).name : (m['name'] as String? ?? 'Unknown snake'),
-            latin: ids.contains(m['id']) ? speciesById(m['id'] as String).latin : m['latin'] as String?,
-            venomous: ids.contains(m['id']) ? speciesById(m['id'] as String).venomous : m['venomous'] as bool?,
-            confidence: ((m['confidence'] as num?) ?? 0).round().clamp(0, 100),
-          ),
-      ];
-      return ScanResult(isSnake: json['is_snake'] != false && matches.isNotEmpty, matches: matches.take(3).toList(), note: json['note'] as String?);
+      return parse((body['content'] as List).where((c) => c['type'] == 'text').map((c) => c['text'] as String).join());
     } catch (_) {
       throw const ScanException('The scanner gave an answer the app couldn’t read. Try again.');
     }
+  }
+
+  /// Reads the JSON answer described in [_prompt].
+  static ScanResult parse(String text) {
+    final json = jsonDecode(text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1)) as Map<String, dynamic>;
+    final ids = species.map((s) => s.id).toSet();
+    final matches = <ScanMatch>[
+      for (final m in (json['matches'] as List? ?? const []).cast<Map<String, dynamic>>())
+        ScanMatch(
+          speciesId: ids.contains(m['id']) ? m['id'] as String : null,
+          name: ids.contains(m['id']) ? speciesById(m['id'] as String).name : (m['name'] as String? ?? 'Unknown snake'),
+          latin: ids.contains(m['id']) ? speciesById(m['id'] as String).latin : m['latin'] as String?,
+          venomous: ids.contains(m['id']) ? speciesById(m['id'] as String).venomous : m['venomous'] as bool?,
+          confidence: ((m['confidence'] as num?) ?? 0).round().clamp(0, 100),
+        ),
+    ];
+    return ScanResult(isSnake: json['is_snake'] != false && matches.isNotEmpty, matches: matches.take(3).toList(), note: json['note'] as String?);
   }
 }

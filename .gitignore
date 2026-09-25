@@ -51,3 +51,6 @@ app.*.map.json
 .tmp/
 SnakeWatch.apk
 
+
+# free Gemini key for the snake scanner (added at build time, never committed)
+scanner_key.txt

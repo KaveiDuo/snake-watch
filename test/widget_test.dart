@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:snake_watch/data/app_state.dart';
+import 'package:snake_watch/data/scanner.dart';
 import 'package:snake_watch/main.dart';
 
 void main() {
@@ -58,5 +59,24 @@ void main() {
     final r = s.submit();
     expect(s.hostelReports, contains(r));
     expect(s.hostelOpen, before + 1);
+  });
+
+  test('Scanner answers are read into campus and non-campus matches', () {
+    final r = Scanner.parse('''```json
+{"is_snake": true, "matches": [
+  {"id": "cobra", "name": "Spectacled Cobra", "latin": "x", "venomous": false, "confidence": 81.6},
+  {"id": null, "name": "Checkered Keelback", "latin": "Fowlea piscator", "venomous": false, "confidence": 12},
+  {"id": "made_up", "name": "Mystery Snake", "venomous": null, "confidence": 3}
+], "note": "Hood with a single ring."}
+```''');
+    expect(r.isSnake, isTrue);
+    expect(r.matches.first.speciesId, 'cobra');
+    expect(r.matches.first.name, 'Monocled Cobra'); // campus data wins over the model's wording
+    expect(r.matches.first.venomous, isTrue);
+    expect(r.matches.first.confidence, 82);
+    expect(r.matches[1].speciesId, isNull);
+    expect(r.matches[1].venomous, isFalse);
+    expect(r.matches[2].speciesId, isNull);
+    expect(Scanner.parse('{"is_snake": false, "matches": []}').isSnake, isFalse);
   });
 }

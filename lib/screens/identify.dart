@@ -22,10 +22,10 @@ class IdentifyResult {
   const IdentifyResult(this.photoPath, {this.speciesId, this.name, required this.venom});
 }
 
-/// "Identify snake": pick or take a photo, then Claude matches it against the
-/// campus species. Without a scanner key (Profile → Snake scanner key) a demo
-/// match is shown instead: sample photos return their own species, your own
-/// photos return Banded Krait.
+/// "Identify snake": pick or take a photo, then AI (free Gemini by default)
+/// matches it against the campus species. If the app has no scanner key at
+/// all, a demo match is shown instead: sample photos return their own
+/// species, your own photos return Banded Krait.
 class IdentifyScreen extends StatefulWidget {
   final bool forReport;
   const IdentifyScreen({super.key, this.forReport = false});
@@ -64,7 +64,7 @@ class _IdentifyScreenState extends State<IdentifyScreen> with SingleTickerProvid
     final minWait = Future<void>.delayed(const Duration(milliseconds: 1600));
     ScanResult? result;
     String? error;
-    final key = await Scanner.loadKey();
+    final key = await Scanner.activeKey();
     _demo = key == null;
     if (key == null) {
       result = _demoResult(demoId);
@@ -184,13 +184,13 @@ class _IdentifyScreenState extends State<IdentifyScreen> with SingleTickerProvid
       ),
       const SizedBox(height: 10),
       FutureBuilder<String?>(
-        future: Scanner.loadKey(),
+        future: Scanner.activeKey(),
         builder: (context, snap) => snap.connectionState != ConnectionState.done
             ? const SizedBox.shrink()
             : Text(
                 snap.data == null
                     ? 'Demo mode: add a scanner key in Profile → Snake scanner key to identify photos for real.'
-                    : 'Photos are identified by Claude AI.',
+                    : 'Photos are identified by AI. Always keep your distance, whatever the result.',
                 style: ft(12, color: snap.data == null ? C.amber : C.greenText, height: 1.5),
               ),
       ),

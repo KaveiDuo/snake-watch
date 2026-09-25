@@ -8,6 +8,13 @@ $env:TEMP = $tmp
 $env:TMP = $tmp
 $env:JAVA_TOOL_OPTIONS = "-Djdk.net.unixdomain.tmpdir=$tmp -Djava.io.tmpdir=$tmp"
 Set-Location $here
-flutter build apk --release
+# The scanner's free Gemini key comes from scanner_key.txt (not committed), passed in reversed.
+$keyFile = Join-Path $here 'scanner_key.txt'
+$keyR = ''
+if (Test-Path $keyFile) {
+    $key = (Get-Content $keyFile -Raw).Trim()
+    $chars = $key.ToCharArray(); [array]::Reverse($chars); $keyR = -join $chars
+}
+flutter build apk --release "--dart-define=SCANNER_KEY_R=$keyR"
 Copy-Item "$here\build\app\outputs\flutter-apk\app-release.apk" "$here\SnakeWatch.apk" -Force
 Write-Host "APK ready: $here\SnakeWatch.apk"

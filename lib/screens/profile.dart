@@ -121,8 +121,8 @@ class InfoCard extends StatelessWidget {
   );
 }
 
-/// Lets the user paste their own Anthropic API key so the snake scanner can
-/// identify photos for real. The key is saved only on this device.
+/// Lets the user use their own AI key for the snake scanner instead of the
+/// app's built-in free one. The key is saved only on this device.
 Future<void> showScannerKeyDialog(BuildContext context) async {
   final current = await Scanner.loadKey();
   if (!context.mounted) return;
@@ -138,8 +138,8 @@ Future<void> showScannerKeyDialog(BuildContext context) async {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Paste an Anthropic API key (it starts with sk-ant-) to identify snake photos with Claude AI. '
-            'It is saved only on this device. Each scan uses a little credit on that Anthropic account.',
+            'Optional. The scanner already works for free. To use your own key instead, paste a '
+            'Google Gemini key (AIza…) or an Anthropic key (sk-ant-…). It is saved only on this device.',
             style: ft(13, color: C.sub, height: 1.45),
           ),
           const SizedBox(height: 14),
@@ -150,7 +150,7 @@ Future<void> showScannerKeyDialog(BuildContext context) async {
             enableSuggestions: false,
             style: ft(14),
             decoration: InputDecoration(
-              hintText: 'sk-ant-…',
+              hintText: 'AIza… or sk-ant-…',
               hintStyle: ft(14, color: C.muted),
               filled: true,
               fillColor: C.card2,
@@ -159,8 +159,10 @@ Future<void> showScannerKeyDialog(BuildContext context) async {
           ),
           const SizedBox(height: 8),
           Text(
-            current == null ? 'No key yet: the scanner shows demo matches.' : 'A key is saved: the scanner is live.',
-            style: ft(12, color: current == null ? C.amber : C.greenText),
+            current != null
+                ? 'Using your own key.'
+                : (Scanner.builtInKey != null ? 'Using the app’s free scanner.' : 'No key: the scanner shows demo matches.'),
+            style: ft(12, color: current == null && Scanner.builtInKey == null ? C.amber : C.greenText),
           ),
         ],
       ),
@@ -181,7 +183,7 @@ Future<void> showScannerKeyDialog(BuildContext context) async {
   if (saved != true) return;
   final key = ctrl.text.trim();
   await Scanner.saveKey(key);
-  if (context.mounted) toast(context, key.isEmpty ? 'Scanner key removed: demo matches only' : 'Scanner key saved: the scanner is live');
+  if (context.mounted) toast(context, key.isEmpty ? 'Your key was removed' : 'Your scanner key was saved');
 }
 
 class ProfileActions extends StatelessWidget {
