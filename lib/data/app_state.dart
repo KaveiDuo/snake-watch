@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart' show LatLngBounds;
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
+import 'open_areas.dart';
 import 'places.dart';
 import 'species.dart';
 import 'zones.dart';
@@ -56,6 +57,55 @@ Zone? zoneAt(LatLng p) {
     }
   }
   return best;
+}
+
+/// Metres from [p] to the segment a–b (flat-earth approximation, fine at campus scale).
+double _distToSegment(LatLng p, LatLng a, LatLng b) {
+  const mPerDegLat = 111320.0;
+  final mPerDegLon = 111320.0 * cos(p.latitude * pi / 180);
+  final ax = (a.longitude - p.longitude) * mPerDegLon, ay = (a.latitude - p.latitude) * mPerDegLat;
+  final bx = (b.longitude - p.longitude) * mPerDegLon, by = (b.latitude - p.latitude) * mPerDegLat;
+  final dx = bx - ax, dy = by - ay;
+  final len2 = dx * dx + dy * dy;
+  final t = len2 == 0 ? 0.0 : (-(ax * dx + ay * dy) / len2).clamp(0.0, 1.0);
+  final x = ax + t * dx, y = ay + t * dy;
+  return sqrt(x * x + y * y);
+}
+
+double _distToLine(LatLng p, List<LatLng> line) {
+  var best = double.infinity;
+  for (var i = 0; i + 1 < line.length; i++) {
+    best = min(best, _distToSegment(p, line[i], line[i + 1]));
+  }
+  return best;
+}
+
+/// Name for a spot outside any building: the field, court, park or lake it is
+/// in, the road it is on, or just "Open area".
+String openAreaName(LatLng p) {
+  for (final (name, outline) in openFields) {
+    if (_inPolygon(p, outline)) return name;
+  }
+  for (final (name, outline) in openWater) {
+    if (_inPolygon(p, outline)) return name;
+  }
+  if (mainRoadLines.any((l) => _distToLine(p, l) <= 14)) return 'North Guwahati Road';
+  if (campusRoadLines.any((l) => _distToLine(p, l) <= 10)) {
+    String? best;
+    var bestD = 170.0;
+    for (final (name, at) in roadNameLabels) {
+      final d = _dist.as(LengthUnit.Meter, p, at);
+      if (d < bestD) {
+        bestD = d;
+        best = name;
+      }
+    }
+    return best ?? 'Campus road';
+  }
+  for (final (name, outline) in openWater) {
+    if (_distToLine(p, outline) <= 15) return '$name bank';
+  }
+  return 'Open area';
 }
 
 LatLng zoneCentre(String name) {
@@ -203,7 +253,7 @@ class AppState extends ChangeNotifier {
   Loc get currentLoc {
     final z = zoneAt(you);
     final source = gps == GpsState.onCampus ? 'Detected from your location' : 'Demo location (you’re off campus)';
-    return z != null ? Loc(z.name, source, covered: true, pos: you) : Loc('Near you', source, covered: false, pos: you);
+    return z != null ? Loc(z.name, source, covered: true, pos: you) : Loc(openAreaName(you), source, covered: false, pos: you);
   }
 
   final List<Report> reports = [
@@ -378,7 +428,7 @@ class AppState extends ChangeNotifier {
     final z = zoneAt(p);
     return z != null
         ? Loc(z.name, 'Pinned on the map', covered: true, pos: p)
-        : Loc('Open area', 'Pinned on the map', covered: false, pos: p);
+        : Loc(openAreaName(p), 'Pinned on the map', covered: false, pos: p);
   }
 }
 

@@ -3,7 +3,6 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 
 import '../data/app_state.dart';
-import '../data/zones.dart';
 import '../theme.dart';
 import 'common.dart';
 
@@ -55,7 +54,6 @@ class CampusMap extends StatefulWidget {
   final LatLng? selected;
   final void Function(LatLng point)? onTapMap;
   final void Function(Report r)? onTapReport;
-  final bool showZone;
   final EdgeInsets controlsPadding;
   final Widget? topHint;
   final VoidCallback? onToggleTheme;
@@ -66,7 +64,6 @@ class CampusMap extends StatefulWidget {
     this.selected,
     this.onTapMap,
     this.onTapReport,
-    this.showZone = false,
     this.controlsPadding = const EdgeInsets.all(10),
     this.topHint,
     this.onToggleTheme,
@@ -154,19 +151,6 @@ class CampusMapState extends State<CampusMap> with TickerProviderStateMixin {
                     maxZoom: 19,
                     tileBuilder: widget.dark ? darkModeTileBuilder : null,
                   ),
-                  if (widget.showZone)
-                    PolygonLayer(
-                      polygons: [
-                        for (final z in campusZones)
-                          for (final pts in z.outlines)
-                            Polygon(
-                              points: pts,
-                              color: C.green.withValues(alpha: 0.16),
-                              borderColor: C.green.withValues(alpha: 0.8),
-                              borderStrokeWidth: 1.5,
-                            ),
-                      ],
-                    ),
                   MarkerLayer(
                     markers: [
                       Marker(point: s.you, width: 44, height: 44, child: _you(s.gps)),
@@ -178,19 +162,7 @@ class CampusMapState extends State<CampusMap> with TickerProviderStateMixin {
                           alignment: Alignment.topCenter,
                           child: GestureDetector(onTap: () => widget.onTapReport?.call(r), child: _pin(r)),
                         ),
-                      if (widget.selected != null) ...[
-                        Marker(
-                          point: widget.selected!,
-                          width: 44,
-                          height: 44,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: C.green.withValues(alpha: 0.18),
-                              border: Border.all(color: C.green, width: 1.5),
-                            ),
-                          ),
-                        ),
+                      if (widget.selected != null)
                         Marker(
                           point: widget.selected!,
                           width: 30,
@@ -198,7 +170,6 @@ class CampusMapState extends State<CampusMap> with TickerProviderStateMixin {
                           alignment: Alignment.topCenter,
                           child: const LocationPin(color: C.green, width: 30),
                         ),
-                      ],
                     ],
                   ),
                 ],

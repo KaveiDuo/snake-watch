@@ -55,7 +55,6 @@ class _SnakeWatchScreenState extends State<SnakeWatchScreen> {
                       onTapReport: (r) => Navigator.push(context, MaterialPageRoute(builder: (_) => SightingDetailScreen(report: r))),
                       onTapMap: (p) => setState(() => _picked = s.locFromMap(p)),
                       selected: picked?.pos,
-                      showZone: picked != null,
                       controlsPadding: const EdgeInsets.fromLTRB(10, 10, 10, 44),
                       topHint: _Hint(
                         picked == null ? 'Tap the map to drop a pin where you saw a snake' : 'Tap again to move the pin',
@@ -143,12 +142,12 @@ class _PickedCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(loc.covered ? loc.name : 'Open area', style: ft(16, w: 700)),
+                    Text(loc.name, style: ft(16, w: 700)),
                     const SizedBox(height: 2),
                     Text(
                       loc.covered
                           ? 'Inside ${loc.name} premises · the ${loc.name} authority covers this spot'
-                          : 'Pin only · no authority is notified; students nearby still see it',
+                          : 'Open area · pin only. No authority is notified; students nearby still see it',
                       style: ft(12.5, color: C.muted, height: 1.35),
                     ),
                   ],

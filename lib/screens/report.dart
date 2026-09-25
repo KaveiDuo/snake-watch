@@ -714,7 +714,6 @@ class _PickOnMapScreenState extends State<PickOnMapScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: CampusMap(
                 dark: s.mapDark,
-                showZone: true,
                 selected: _loc.pos,
                 onToggleTheme: s.toggleMap,
                 onTapMap: (p) => setState(() => _loc = s.locFromMap(p)),
@@ -757,12 +756,12 @@ class _PickOnMapScreenState extends State<PickOnMapScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(_loc.covered ? _loc.name : 'Open area', style: ft(17, w: 700)),
+                          Text(_loc.name, style: ft(17, w: 700)),
                           const SizedBox(height: 3),
                           Text(
                             _loc.covered
                                 ? 'Inside ${_loc.name} premises · the ${_loc.name} authority covers this spot'
-                                : 'Pin only · no authority is notified; students nearby still see it',
+                                : 'Open area · pin only. No authority is notified; students nearby still see it',
                             style: ft(12.5, color: C.muted, height: 1.4),
                           ),
                         ],
@@ -909,7 +908,7 @@ class _ReportedScreenState extends State<ReportedScreen> with TickerProviderStat
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(r.covered ? 'Sent to the ${r.place} authority' : 'Open area · pin only', style: ft(13.5, w: 600)),
+                            Text(r.covered ? 'Sent to the ${r.place} authority' : '${r.place} · open area', style: ft(13.5, w: 600)),
                             const SizedBox(height: 4),
                             Text(
                               r.covered
