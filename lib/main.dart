@@ -36,7 +36,10 @@ class SnakeWatchApp extends StatelessWidget {
                 child: SizedBox(
                   width: 430,
                   height: MediaQuery.sizeOf(context).height,
-                  child: MediaQuery(data: MediaQuery.of(context).copyWith(size: Size(430, MediaQuery.sizeOf(context).height)), child: child!),
+                  child: MediaQuery(
+                    data: MediaQuery.of(context).copyWith(size: Size(430, MediaQuery.sizeOf(context).height)),
+                    child: child!,
+                  ),
                 ),
               ),
             ),

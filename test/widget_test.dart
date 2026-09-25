@@ -17,10 +17,15 @@ void main() {
     expect(s.hostelOpen, before - 1);
   });
 
-  test('Taps inside a hostel are covered by that hostel; elsewhere is an open area', () {
+  test('Pins on a hostel or campus building go to its authority; open areas go to nobody', () {
     final s = AppState();
     expect(s.locFromMap(const LatLng(26.19043, 91.70156)).name, 'Kameng Hostel');
-    expect(s.locFromMap(const LatLng(26.1865, 91.6900)).covered, isFalse);
+    expect(s.locFromMap(const LatLng(26.18574, 91.68935)).name, 'Core 5');
+    expect(s.locFromMap(const LatLng(26.19665, 91.69748)).name, 'IITG Hospital');
+    expect(s.locFromMap(const LatLng(26.19248, 91.69901)).name, 'New SAC');
+    final field = s.locFromMap(const LatLng(26.19506, 91.70221)); // cricket ground
+    expect(field.covered, isFalse);
+    expect(field.name, 'Open area');
   });
 
   test("A student's report inside Kameng reaches the Kameng authority's console", () {

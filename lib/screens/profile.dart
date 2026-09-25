@@ -20,28 +20,34 @@ class IdCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Panel(
-        border: C.green.withValues(alpha: 0.75),
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
-        child: Column(children: [
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+    border: C.green.withValues(alpha: 0.75),
+    padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+    child: Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
             Image.asset('assets/images/iitg_logo.png', width: 32, height: 32),
             const SizedBox(width: 16),
             Text('Indian Institute of\nTechnology, Guwahati', style: ft(14, color: C.sub, height: 1.4)),
-          ]),
-          const SizedBox(height: 18),
-          const Divider(color: C.line, height: 1),
-          const SizedBox(height: 18),
-          avatar,
-          const SizedBox(height: 12),
-          Text(name, style: ft(20, w: 600)),
-          const SizedBox(height: 4),
-          for (final l in lines) Padding(padding: const EdgeInsets.only(top: 3), child: Text(l, style: ft(14, color: C.sub))),
-          if (barcode) ...[
-            const SizedBox(height: 14),
-            SizedBox(width: 204, height: 58, child: CustomPaint(painter: _Barcode())),
           ],
-        ]),
-      );
+        ),
+        const SizedBox(height: 18),
+        const Divider(color: C.line, height: 1),
+        const SizedBox(height: 18),
+        avatar,
+        const SizedBox(height: 12),
+        Text(name, style: ft(20, w: 600)),
+        const SizedBox(height: 4),
+        for (final l in lines)
+          Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: Text(l, style: ft(14, color: C.sub)),
+          ),
+        if (barcode) ...[const SizedBox(height: 14), SizedBox(width: 204, height: 58, child: CustomPaint(painter: _Barcode()))],
+      ],
+    ),
+  );
 }
 
 class _Barcode extends CustomPainter {
@@ -75,21 +81,29 @@ class InfoCard extends StatelessWidget {
   const InfoCard(this.rows, {super.key});
   @override
   Widget build(BuildContext context) => Panel(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(children: [
-          for (final (i, r) in rows.indexed) ...[
-            if (i > 0) const Divider(color: C.line, height: 1),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 15),
-              child: Row(children: [
+    padding: const EdgeInsets.symmetric(horizontal: 16),
+    child: Column(
+      children: [
+        for (final (i, r) in rows.indexed) ...[
+          if (i > 0) const Divider(color: C.line, height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 15),
+            child: Row(
+              children: [
                 Icon(r.icon, color: C.green, size: 19),
                 const SizedBox(width: 14),
                 Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(r.label, style: ft(13.5, color: C.muted)),
-                    const SizedBox(height: 4),
-                    Text(r.value.isEmpty ? 'Not added' : r.value, style: ft(15, color: r.value.isEmpty ? const Color(0xFF5C5C5C) : C.text)),
-                  ]),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(r.label, style: ft(13.5, color: C.muted)),
+                      const SizedBox(height: 4),
+                      Text(
+                        r.value.isEmpty ? 'Not added' : r.value,
+                        style: ft(15, color: r.value.isEmpty ? const Color(0xFF5C5C5C) : C.text),
+                      ),
+                    ],
+                  ),
                 ),
                 if (r.trailing != null) r.trailing!,
                 if (r.editable)
@@ -97,11 +111,13 @@ class InfoCard extends StatelessWidget {
                     onPressed: () => toast(context, 'Editing isn’t part of this demo'),
                     icon: const Icon(Icons.edit_outlined, color: C.green, size: 19),
                   ),
-              ]),
+              ],
             ),
-          ],
-        ]),
-      );
+          ),
+        ],
+      ],
+    ),
+  );
 }
 
 class ProfileActions extends StatelessWidget {
@@ -109,37 +125,49 @@ class ProfileActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget b(IconData icon, String label, VoidCallback onTap, {Color color = C.text}) => Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Material(
-            color: C.card,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: C.line)),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: onTap,
-              child: SizedBox(
-                height: 50,
-                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Icon(icon, size: 20, color: color == C.text ? C.sub : color),
-                  const SizedBox(width: 10),
-                  Text(label, style: ft(16, color: color)),
-                ]),
-              ),
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: C.card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: C.line),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: SizedBox(
+            height: 50,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 20, color: color == C.text ? C.sub : color),
+                const SizedBox(width: 10),
+                Text(label, style: ft(16, color: color)),
+              ],
             ),
           ),
-        );
-    return Column(children: [
-      b(Icons.info_outline_rounded, 'About Us', () => showAboutDialog(
+        ),
+      ),
+    );
+    return Column(
+      children: [
+        b(
+          Icons.info_outline_rounded,
+          'About Us',
+          () => showAboutDialog(
             context: context,
             applicationName: 'Onestop · Snake Watch',
             applicationVersion: 'Demo 1.0',
             applicationLegalese: 'A standalone demo of the Snake Watch add-on for the Onestop app. Uses example data only.',
-          )),
-      b(Icons.bug_report_outlined, 'Bug/Feature Request', () => toast(context, 'Thanks! Feedback isn’t sent in this demo')),
-      b(Icons.light_mode_outlined, 'Switch to Light Mode', () => toast(context, 'Light mode isn’t part of this demo')),
-      b(Icons.logout_rounded, 'Log Out', () => logOut(context), color: const Color(0xFFFF6B6B)),
-      const SizedBox(height: 18),
-      Opacity(opacity: 0.85, child: Image.asset('assets/images/swc.png', height: 30)),
-    ]);
+          ),
+        ),
+        b(Icons.bug_report_outlined, 'Bug/Feature Request', () => toast(context, 'Thanks! Feedback isn’t sent in this demo')),
+        b(Icons.light_mode_outlined, 'Switch to Light Mode', () => toast(context, 'Light mode isn’t part of this demo')),
+        b(Icons.logout_rounded, 'Log Out', () => logOut(context), color: const Color(0xFFFF6B6B)),
+        const SizedBox(height: 18),
+        Opacity(opacity: 0.85, child: Image.asset('assets/images/swc.png', height: 30)),
+      ],
+    );
   }
 }
 
@@ -149,42 +177,57 @@ class StudentProfile extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return DarkPage(
-      body: ListView(padding: const EdgeInsets.fromLTRB(16, 4, 16, 30), children: [
-        Row(children: [
-          Text.rich(TextSpan(children: [TextSpan(text: 'One', style: ft(28, w: 700)), TextSpan(text: '.', style: ft(28, w: 700, color: C.green))])),
-        ]),
-        const SizedBox(height: 16),
-        IdCard(
-          avatar: Container(
-            width: 88,
-            height: 88,
-            decoration: const BoxDecoration(color: Color(0xFF2A2A2A), shape: BoxShape.circle),
-            child: const Icon(Icons.person_outline_rounded, color: C.muted, size: 42),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 30),
+        children: [
+          Row(
+            children: [
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(text: 'One', style: ft(28, w: 700)),
+                    TextSpan(
+                      text: '.',
+                      style: ft(28, w: 700, color: C.green),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          name: s.studentName,
-          lines: const ['210102043', 'IIT Guwahati'],
-          barcode: true,
-        ),
-        const SizedBox(height: 22),
-        Text('Additional Information', style: ft(17, w: 600)),
-        const SizedBox(height: 12),
-        InfoCard([
-          InfoRow(Icons.mail_outline_rounded, 'Outlook ID', s.studentEmail, editable: false),
-          const InfoRow(Icons.mail_outline_rounded, 'Alternate Email', 'ananya.sharma@gmail.com'),
-          const InfoRow(Icons.call_outlined, 'Contact Number', '98765 43210'),
-          const InfoRow(Icons.call_outlined, 'Emergency Contact Number', '91234 56780'),
-          const InfoRow(Icons.person_outline_rounded, 'Gender', 'Female'),
-          const InfoRow(Icons.apartment_outlined, 'Hostel', 'Kameng'),
-          const InfoRow(Icons.restaurant_outlined, 'Subscribed Mess', 'Kameng'),
-          const InfoRow(Icons.apartment_outlined, 'Room Number', 'B2-17'),
-          const InfoRow(Icons.calendar_month_outlined, 'Date of Birth', '14-03-2004'),
-          const InfoRow(Icons.home_outlined, 'Home Address', 'Jaipur, Rajasthan'),
-          const InfoRow(Icons.pedal_bike_outlined, 'Cycle Registration Number', ''),
-          const InfoRow(Icons.link_rounded, 'LinkedIn Profile', ''),
-        ]),
-        const SizedBox(height: 22),
-        const ProfileActions(),
-      ]),
+          const SizedBox(height: 16),
+          IdCard(
+            avatar: Container(
+              width: 88,
+              height: 88,
+              decoration: const BoxDecoration(color: Color(0xFF2A2A2A), shape: BoxShape.circle),
+              child: const Icon(Icons.person_outline_rounded, color: C.muted, size: 42),
+            ),
+            name: s.studentName,
+            lines: const ['210102043', 'IIT Guwahati'],
+            barcode: true,
+          ),
+          const SizedBox(height: 22),
+          Text('Additional Information', style: ft(17, w: 600)),
+          const SizedBox(height: 12),
+          InfoCard([
+            InfoRow(Icons.mail_outline_rounded, 'Outlook ID', s.studentEmail, editable: false),
+            const InfoRow(Icons.mail_outline_rounded, 'Alternate Email', 'ananya.sharma@gmail.com'),
+            const InfoRow(Icons.call_outlined, 'Contact Number', '98765 43210'),
+            const InfoRow(Icons.call_outlined, 'Emergency Contact Number', '91234 56780'),
+            const InfoRow(Icons.person_outline_rounded, 'Gender', 'Female'),
+            const InfoRow(Icons.apartment_outlined, 'Hostel', 'Kameng'),
+            const InfoRow(Icons.restaurant_outlined, 'Subscribed Mess', 'Kameng'),
+            const InfoRow(Icons.apartment_outlined, 'Room Number', 'B2-17'),
+            const InfoRow(Icons.calendar_month_outlined, 'Date of Birth', '14-03-2004'),
+            const InfoRow(Icons.home_outlined, 'Home Address', 'Jaipur, Rajasthan'),
+            const InfoRow(Icons.pedal_bike_outlined, 'Cycle Registration Number', ''),
+            const InfoRow(Icons.link_rounded, 'LinkedIn Profile', ''),
+          ]),
+          const SizedBox(height: 22),
+          const ProfileActions(),
+        ],
+      ),
     );
   }
 }

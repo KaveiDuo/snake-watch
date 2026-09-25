@@ -28,25 +28,29 @@ class DarkPage extends StatelessWidget {
       backgroundColor: C.bg,
       floatingActionButton: fab,
       bottomNavigationBar: bottom,
-      body: Stack(children: [
-        Container(
-          height: 170,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF12301D), Color(0x000F0F0F)],
+      body: Stack(
+        children: [
+          Container(
+            height: 170,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF12301D), Color(0x000F0F0F)],
+              ),
             ),
           ),
-        ),
-        SafeArea(
-          bottom: bottom == null,
-          child: Column(children: [
-            ?header,
-            Expanded(child: body),
-          ]),
-        ),
-      ]),
+          SafeArea(
+            bottom: bottom == null,
+            child: Column(
+              children: [
+                ?header,
+                Expanded(child: body),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -70,10 +74,14 @@ class RoundButton extends StatelessWidget {
         child: SizedBox(
           width: size,
           height: size,
-          child: Stack(alignment: Alignment.center, clipBehavior: Clip.none, children: [
-            Icon(icon, color: color, size: size * 0.48),
-            if (badge != null) Positioned(top: 7, right: 8, child: badge!),
-          ]),
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              Icon(icon, color: color, size: size * 0.48),
+              if (badge != null) Positioned(top: 7, right: 8, child: badge!),
+            ],
+          ),
         ),
       ),
     );
@@ -92,17 +100,23 @@ class AppHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-      child: Row(children: [
-        RoundButton(backIcon, onTap: onBack ?? () => Navigator.maybePop(context)),
-        const SizedBox(width: 13),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-            Text(title, style: ft(20, w: 700), maxLines: 1, overflow: TextOverflow.ellipsis),
-            if (subtitle != null) Text(subtitle!, style: ft(12.5, color: C.muted)),
-          ]),
-        ),
-        ?trailing,
-      ]),
+      child: Row(
+        children: [
+          RoundButton(backIcon, onTap: onBack ?? () => Navigator.maybePop(context)),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title, style: ft(20, w: 700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                if (subtitle != null) Text(subtitle!, style: ft(12.5, color: C.muted)),
+              ],
+            ),
+          ),
+          ?trailing,
+        ],
+      ),
     );
   }
 }
@@ -114,7 +128,15 @@ class Panel extends StatelessWidget {
   final Color color;
   final double radius;
   final VoidCallback? onTap;
-  const Panel({super.key, required this.child, this.padding = const EdgeInsets.all(16), this.border, this.color = C.card, this.radius = 20, this.onTap});
+  const Panel({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+    this.border,
+    this.color = C.card,
+    this.radius = 20,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +148,10 @@ class Panel extends StatelessWidget {
       color: color,
       shape: shape,
       clipBehavior: Clip.antiAlias,
-      child: InkWell(onTap: onTap, child: Padding(padding: padding, child: child)),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(padding: padding, child: child),
+      ),
     );
   }
 }
@@ -175,10 +200,13 @@ class Btn extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
           onTap: onTap,
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            if (icon != null) ...[Icon(icon, color: fg, size: 20), const SizedBox(width: 8)],
-            Text(label, style: ft(15.5, w: 700, color: fg)),
-          ]),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[Icon(icon, color: fg, size: 20), const SizedBox(width: 8)],
+              Text(label, style: ft(15.5, w: 700, color: fg)),
+            ],
+          ),
         ),
       ),
     );
@@ -206,10 +234,10 @@ class Tag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
-        child: Text(text, style: ft(10.5, w: 700, color: fg, ls: 0.6)),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+    child: Text(text, style: ft(10.5, w: 700, color: fg, ls: 0.6)),
+  );
 }
 
 /// Pin colour on the map for a report.
@@ -252,10 +280,12 @@ class SnakeThumb extends StatelessWidget {
 void toast(BuildContext context, String msg) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(
-      content: Text(msg, style: ft(13.5)),
-      backgroundColor: const Color(0xFF262626),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-    ));
+    ..showSnackBar(
+      SnackBar(
+        content: Text(msg, style: ft(13.5)),
+        backgroundColor: const Color(0xFF262626),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    );
 }

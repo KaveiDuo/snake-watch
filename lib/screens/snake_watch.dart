@@ -121,7 +121,6 @@ class _PickedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hostel = loc.name.replaceAll(' Hostel', '');
     return Panel(
       padding: const EdgeInsets.fromLTRB(14, 12, 6, 14),
       child: Column(
@@ -148,8 +147,8 @@ class _PickedCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       loc.covered
-                          ? 'Inside $hostel premises · the $hostel hostel authority covers this spot'
-                          : 'No hostel authority covers this spot · students nearby are still alerted',
+                          ? 'Inside ${loc.name} premises · the ${loc.name} authority covers this spot'
+                          : 'Pin only · no authority is notified; students nearby still see it',
                       style: ft(12.5, color: C.muted, height: 1.35),
                     ),
                   ],
@@ -198,12 +197,7 @@ class _Legend extends StatelessWidget {
   const _Legend({required this.dark});
   @override
   Widget build(BuildContext context) {
-    final items = [
-      ('Venomous', const Color(0xFFFF453A)),
-      ('Harmless', const Color(0xFF2DD4BF)),
-      ('Unsure', C.amber),
-      ('You', C.blue),
-    ];
+    final items = [('Venomous', const Color(0xFFFF453A)), ('Harmless', const Color(0xFF2DD4BF)), ('Unsure', C.amber), ('You', C.blue)];
     return Align(
       alignment: Alignment.bottomLeft,
       child: Container(

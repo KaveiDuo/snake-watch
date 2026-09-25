@@ -6,9 +6,9 @@ import 'package:flutter_map/flutter_map.dart' show LatLngBounds;
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
-import 'hostels.dart';
 import 'places.dart';
 import 'species.dart';
+import 'zones.dart';
 
 /// IIT Guwahati campus (real coordinates, from OpenStreetMap).
 const campusCenter = LatLng(26.1895, 91.6965);
@@ -17,9 +17,9 @@ final campusBounds = LatLngBounds(const LatLng(26.1780, 91.6820), const LatLng(2
 /// Where "You" is shown when GPS is off, denied, or you're not on campus.
 const demoYou = LatLng(26.19018, 91.70098); // beside Kameng Hostel
 
-/// A spot counts as inside a hostel if it is in the building outline or
-/// within this many metres of it (courtyards, paths, parking).
-const hostelMarginMetres = 20.0;
+/// A spot counts as inside a building's premises if it is in the outline or
+/// within this many metres of it (courtyards, entrances, parking).
+const premisesMarginMetres = 20.0;
 
 const _dist = Distance();
 
@@ -35,21 +35,35 @@ bool _inPolygon(LatLng p, List<LatLng> poly) {
   return inside;
 }
 
-double _distToPolygon(LatLng p, List<LatLng> poly) =>
-    poly.map((v) => _dist.as(LengthUnit.Meter, p, v)).reduce(min);
+double _distToPolygon(LatLng p, List<LatLng> poly) => poly.map((v) => _dist.as(LengthUnit.Meter, p, v)).reduce(min);
 
-/// Hostel whose premises contain [p], or null for an open area.
-String? hostelAt(LatLng p) {
-  for (final e in hostelOutlines.entries) {
-    if (_inPolygon(p, e.value) || _distToPolygon(p, e.value) <= hostelMarginMetres) return e.key;
+/// Hostel or campus building whose premises contain [p], or null for an
+/// open area (road, field, lake, forest…). Inside an outline wins; otherwise
+/// the nearest building within [premisesMarginMetres].
+Zone? zoneAt(LatLng p) {
+  for (final z in campusZones) {
+    if (z.outlines.any((o) => _inPolygon(p, o))) return z;
   }
-  return null;
+  Zone? best;
+  var bestD = premisesMarginMetres;
+  for (final z in campusZones) {
+    for (final o in z.outlines) {
+      final d = _distToPolygon(p, o);
+      if (d <= bestD) {
+        bestD = d;
+        best = z;
+      }
+    }
+  }
+  return best;
 }
 
-LatLng hostelCentre(String name) {
-  final pts = hostelOutlines[name]!;
-  return LatLng(pts.map((p) => p.latitude).reduce((a, b) => a + b) / pts.length,
-      pts.map((p) => p.longitude).reduce((a, b) => a + b) / pts.length);
+LatLng zoneCentre(String name) {
+  final pts = campusZones.firstWhere((z) => z.name == name).outlines.first;
+  return LatLng(
+    pts.map((p) => p.latitude).reduce((a, b) => a + b) / pts.length,
+    pts.map((p) => p.longitude).reduce((a, b) => a + b) / pts.length,
+  );
 }
 
 enum Venom { venomous, harmless, unsure }
@@ -152,12 +166,14 @@ class AppState extends ChangeNotifier {
         notifyListeners();
         return;
       }
-      _gpsSub = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 5),
-      ).listen(_onPosition, onError: (_) {
-        gps = GpsState.denied;
-        notifyListeners();
-      });
+      _gpsSub = Geolocator.getPositionStream(locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 5))
+          .listen(
+            _onPosition,
+            onError: (_) {
+              gps = GpsState.denied;
+              notifyListeners();
+            },
+          );
       _onPosition(await Geolocator.getCurrentPosition());
     } catch (_) {
       gps = GpsState.denied;
@@ -185,41 +201,71 @@ class AppState extends ChangeNotifier {
 
   /// Location used for "Use my current location".
   Loc get currentLoc {
-    final h = hostelAt(you);
+    final z = zoneAt(you);
     final source = gps == GpsState.onCampus ? 'Detected from your location' : 'Demo location (you’re off campus)';
-    return h != null ? Loc(h, source, covered: true, pos: you) : Loc('Near you', source, covered: false, pos: you);
+    return z != null ? Loc(z.name, source, covered: true, pos: you) : Loc('Near you', source, covered: false, pos: you);
   }
 
   final List<Report> reports = [
     Report(
-      id: 'r1', speciesId: 'banded_krait', venom: Venom.venomous, place: 'Kameng Hostel', spot: 'back gate',
+      id: 'r1',
+      speciesId: 'banded_krait',
+      venom: Venom.venomous,
+      place: 'Kameng Hostel',
+      spot: 'back gate',
       note: 'Went under the parked cycles near the back gate, hasn’t come out. Security has been told.',
-      reporter: 'Ananya S.', time: DateTime.now().subtract(const Duration(minutes: 9)),
-      pos: const LatLng(26.19068, 91.70186), covered: true,
+      reporter: 'Ananya S.',
+      time: DateTime.now().subtract(const Duration(minutes: 9)),
+      pos: const LatLng(26.19068, 91.70186),
+      covered: true,
     ),
     Report(
-      id: 'r2', speciesId: 'keelback', venom: Venom.harmless, place: 'Kameng Hostel', spot: 'near the mess hall',
+      id: 'r2',
+      speciesId: 'keelback',
+      venom: Venom.harmless,
+      place: 'Kameng Hostel',
+      spot: 'near the mess hall',
       note: 'Saw it near the mess hall drain this morning, it moved off toward the hedge.',
-      reporter: 'Rohit K.', time: DateTime.now().subtract(const Duration(minutes: 32)),
-      pos: const LatLng(26.19016, 91.70140), covered: true,
+      reporter: 'Rohit K.',
+      time: DateTime.now().subtract(const Duration(minutes: 32)),
+      pos: const LatLng(26.19016, 91.70140),
+      covered: true,
     ),
     Report(
-      id: 'r3', venom: Venom.unsure, place: 'Lake-side Path',
+      id: 'r3',
+      venom: Venom.unsure,
+      place: 'Lake-side Path',
       note: 'Dark snake crossed the path and went into the grass by the lake.',
-      reporter: 'Priya D.', time: DateTime.now().subtract(const Duration(minutes: 41)),
-      pos: const LatLng(26.19005, 91.69420), covered: false,
+      reporter: 'Priya D.',
+      time: DateTime.now().subtract(const Duration(minutes: 41)),
+      pos: const LatLng(26.19005, 91.69420),
+      covered: false,
     ),
     Report(
-      id: 'r4', speciesId: 'wolf', venom: Venom.harmless, place: 'Kameng Hostel', spot: 'near the parking area',
+      id: 'r4',
+      speciesId: 'wolf',
+      venom: Venom.harmless,
+      place: 'Kameng Hostel',
+      spot: 'near the parking area',
       note: 'Small banded snake near the bike parking, guard moved it to the green belt.',
-      reporter: 'Meghna B.', time: DateTime.now().subtract(const Duration(hours: 1)),
-      pos: const LatLng(26.19080, 91.70128), covered: true, safe: true,
+      reporter: 'Meghna B.',
+      time: DateTime.now().subtract(const Duration(hours: 1)),
+      pos: const LatLng(26.19080, 91.70128),
+      covered: true,
+      safe: true,
     ),
     Report(
-      id: 'r5', speciesId: 'rat', venom: Venom.harmless, place: 'Core 3', spot: 'rear stairs',
+      id: 'r5',
+      speciesId: 'rat',
+      venom: Venom.harmless,
+      place: 'Core 3',
+      spot: 'rear stairs',
       note: 'Long snake on the rear stairs, went under the steps.',
-      reporter: 'Arjun M.', time: DateTime.now().subtract(const Duration(hours: 2)),
-      pos: const LatLng(26.18590, 91.69060), covered: false, safe: true,
+      reporter: 'Arjun M.',
+      time: DateTime.now().subtract(const Duration(hours: 2)),
+      pos: const LatLng(26.18590, 91.69060),
+      covered: true,
+      safe: true,
     ),
   ];
 
@@ -313,23 +359,26 @@ class AppState extends ChangeNotifier {
     return r;
   }
 
-  /// Place picked from the list. Hostels use their real position.
-  Loc locFromList(String place, bool hostel) {
-    final label = placeLabel(place, hostel);
-    final osmName = place == 'MSH' ? 'Married Scholars Hostel' : '$place Hostel';
-    if (hostel && hostelOutlines.containsKey(osmName)) {
-      return Loc(label, 'Chosen from the list', covered: true, pos: hostelCentre(osmName));
+  /// Place picked from the list. Buildings with an OpenStreetMap outline use
+  /// its real position; the rest get an approximate spot on campus (demo).
+  Loc locFromList(Place place, bool covered) {
+    LatLng pos;
+    if (place.zone != null) {
+      pos = zoneCentre(place.zone!);
+    } else {
+      final rnd = Random(place.label.hashCode);
+      pos = LatLng(campusCenter.latitude + (rnd.nextDouble() - 0.5) * 0.008, campusCenter.longitude + (rnd.nextDouble() - 0.5) * 0.012);
     }
-    // Other places: approximate spot on campus (demo).
-    final rnd = Random(place.hashCode);
-    final pos = LatLng(campusCenter.latitude + (rnd.nextDouble() - 0.5) * 0.008, campusCenter.longitude + (rnd.nextDouble() - 0.5) * 0.012);
-    return Loc(label, 'Chosen from the list', covered: hostel, pos: pos);
+    return Loc(place.label, 'Chosen from the list', covered: covered, pos: pos);
   }
 
-  /// Place picked by tapping the map.
+  /// Place picked by tapping the map: a hostel or campus building if the pin
+  /// is on its premises, otherwise an open area (no authority).
   Loc locFromMap(LatLng p) {
-    final h = hostelAt(p);
-    return h != null ? Loc(h, 'Pinned on the map', covered: true, pos: p) : Loc('Open area', 'Pinned on the map', covered: false, pos: p);
+    final z = zoneAt(p);
+    return z != null
+        ? Loc(z.name, 'Pinned on the map', covered: true, pos: p)
+        : Loc('Open area', 'Pinned on the map', covered: false, pos: p);
   }
 }
 

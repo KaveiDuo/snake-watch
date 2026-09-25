@@ -171,7 +171,7 @@ class _ReportScreenState extends State<ReportScreen> {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Text('Helps the hostel authority prepare. Skip it if you are not sure.', style: ft(13, color: C.muted)),
+                  Text('Helps the authority prepare. Skip it if you are not sure.', style: ft(13, color: C.muted)),
                   const SizedBox(height: 14),
                   if (d.photoPath != null)
                     _PhotoAttached(path: d.photoPath!, matchedId: d.matchedId, onRemove: () => s.setPhoto(null))
@@ -255,7 +255,7 @@ class _ReportScreenState extends State<ReportScreen> {
                       ? 'Answer the question above to continue'
                       : loc.covered
                       ? 'Alerts the ${loc.authority} and students nearby'
-                      : 'Alerts students nearby · no hostel authority for this spot',
+                      : 'Pin only · alerts students nearby, no authority for open areas',
                   style: ft(11.5, color: C.muted),
                   textAlign: TextAlign.center,
                 ),
@@ -625,22 +625,27 @@ class _LocationSheetState extends State<LocationSheet> {
                   }),
                 ],
                 for (final g in placeGroups) ...[
-                  if (g.places.any((p) => p.toLowerCase().contains(q))) ...[
+                  if (g.places.any((p) => p.label.toLowerCase().contains(q))) ...[
                     Padding(
                       padding: const EdgeInsets.fromLTRB(4, 22, 0, 6),
-                      child: Text(g.title, style: ft(11.5, w: 700, color: C.muted, ls: 1.2)),
+                      child: Row(
+                        children: [
+                          Text(g.title, style: ft(11.5, w: 700, color: C.muted, ls: 1.2)),
+                          if (!g.covered) ...[const SizedBox(width: 8), Text('· pin only, no authority', style: ft(11, color: C.faint))],
+                        ],
+                      ),
                     ),
-                    for (final p in g.places.where((p) => p.toLowerCase().contains(q)))
+                    for (final p in g.places.where((p) => p.label.toLowerCase().contains(q)))
                       InkWell(
                         borderRadius: BorderRadius.circular(12),
-                        onTap: () => Navigator.pop(context, s.locFromList(p, g.hostels)),
+                        onTap: () => Navigator.pop(context, s.locFromList(p, g.covered)),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 11),
                           child: Row(
                             children: [
                               const Icon(Icons.location_on_outlined, color: C.muted, size: 20),
                               const SizedBox(width: 14),
-                              Expanded(child: Text(p, style: ft(15.5))),
+                              Expanded(child: Text(p.label, style: ft(15.5))),
                             ],
                           ),
                         ),
@@ -756,8 +761,8 @@ class _PickOnMapScreenState extends State<PickOnMapScreen> {
                           const SizedBox(height: 3),
                           Text(
                             _loc.covered
-                                ? 'Inside ${_loc.name} premises · the ${_loc.name.replaceAll(' Hostel', '')} hostel authority covers this spot'
-                                : 'No hostel authority covers this spot · students nearby are still alerted',
+                                ? 'Inside ${_loc.name} premises · the ${_loc.name} authority covers this spot'
+                                : 'Pin only · no authority is notified; students nearby still see it',
                             style: ft(12.5, color: C.muted, height: 1.4),
                           ),
                         ],
@@ -904,15 +909,12 @@ class _ReportedScreenState extends State<ReportedScreen> with TickerProviderStat
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              r.covered ? 'Sent to the ${r.place} authority' : 'Open area · no hostel authority',
-                              style: ft(13.5, w: 600),
-                            ),
+                            Text(r.covered ? 'Sent to the ${r.place} authority' : 'Open area · pin only', style: ft(13.5, w: 600)),
                             const SizedBox(height: 4),
                             Text(
                               r.covered
                                   ? 'It’s in their Snake Watch console now. They’ll check the area and mark it safe, and you’ll be notified.'
-                                  : 'No hostel authority covers this spot. The pin clears itself from Snake Watch after 2–3 days.',
+                                  : 'No authority is notified for open areas. Students nearby can see your pin, and it clears itself after 2–3 days.',
                               style: ft(12.5, color: C.muted, height: 1.4),
                             ),
                           ],

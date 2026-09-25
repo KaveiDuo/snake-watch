@@ -30,61 +30,66 @@ class C {
 /// Figtree text style helper. The bundled fonts are variable fonts, so the
 /// weight is passed as a font variation as well as a FontWeight.
 TextStyle ft(double size, {int w = 400, Color color = C.text, double? height, double? ls}) => TextStyle(
-      fontFamily: 'Figtree',
-      fontSize: size,
-      fontWeight: FontWeight.values[(w ~/ 100) - 1],
-      fontVariations: [FontVariation('wght', w.toDouble())],
-      color: color,
-      height: height,
-      letterSpacing: ls,
-    );
+  fontFamily: 'Figtree',
+  fontSize: size,
+  fontWeight: FontWeight.values[(w ~/ 100) - 1],
+  fontVariations: [FontVariation('wght', w.toDouble())],
+  color: color,
+  height: height,
+  letterSpacing: ls,
+);
 
 TextStyle geist(double size, {int w = 500, Color color = C.onestopInk, double? height, double? ls}) => TextStyle(
-      fontFamily: 'Geist',
-      fontSize: size,
-      fontWeight: FontWeight.values[(w ~/ 100) - 1],
-      fontVariations: [FontVariation('wght', w.toDouble())],
-      color: color,
-      height: height,
-      letterSpacing: ls,
-    );
+  fontFamily: 'Geist',
+  fontSize: size,
+  fontWeight: FontWeight.values[(w ~/ 100) - 1],
+  fontVariations: [FontVariation('wght', w.toDouble())],
+  color: color,
+  height: height,
+  letterSpacing: ls,
+);
 
 TextStyle mont(double size, {int w = 600, Color color = Colors.white}) => TextStyle(
-      fontFamily: 'Montserrat',
-      fontSize: size,
-      fontWeight: FontWeight.values[(w ~/ 100) - 1],
-      fontVariations: [FontVariation('wght', w.toDouble())],
-      color: color,
-    );
+  fontFamily: 'Montserrat',
+  fontSize: size,
+  fontWeight: FontWeight.values[(w ~/ 100) - 1],
+  fontVariations: [FontVariation('wght', w.toDouble())],
+  color: color,
+);
 
 ThemeData buildTheme() => ThemeData(
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: C.bg,
-      fontFamily: 'Figtree',
-      colorScheme: const ColorScheme.dark(primary: C.green, surface: C.bg),
-      splashFactory: InkRipple.splashFactory,
-      // Same smooth screen-to-screen animation on phones and in the browser.
-      pageTransitionsTheme: const PageTransitionsTheme(builders: {
-        TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
-        TargetPlatform.iOS: FadeForwardsPageTransitionsBuilder(),
-        TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
-        TargetPlatform.macOS: FadeForwardsPageTransitionsBuilder(),
-        TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
-        TargetPlatform.fuchsia: FadeForwardsPageTransitionsBuilder(),
-      }),
-    );
+  brightness: Brightness.dark,
+  scaffoldBackgroundColor: C.bg,
+  fontFamily: 'Figtree',
+  colorScheme: const ColorScheme.dark(primary: C.green, surface: C.bg),
+  splashFactory: InkRipple.splashFactory,
+  // Same smooth screen-to-screen animation on phones and in the browser.
+  pageTransitionsTheme: const PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+      TargetPlatform.iOS: FadeForwardsPageTransitionsBuilder(),
+      TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
+      TargetPlatform.macOS: FadeForwardsPageTransitionsBuilder(),
+      TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
+      TargetPlatform.fuchsia: FadeForwardsPageTransitionsBuilder(),
+    },
+  ),
+);
 
 /// Slides a screen up from the bottom while fading it in (used when a
 /// report starts from a pin on the map).
 Route<T> slideUpRoute<T>(Widget page) => PageRouteBuilder<T>(
-      transitionDuration: const Duration(milliseconds: 380),
-      reverseTransitionDuration: const Duration(milliseconds: 280),
-      pageBuilder: (_, _, _) => page,
-      transitionsBuilder: (_, a, _, child) {
-        final curve = CurvedAnimation(parent: a, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
-        return FadeTransition(
-          opacity: curve,
-          child: SlideTransition(position: Tween(begin: const Offset(0, 0.12), end: Offset.zero).animate(curve), child: child),
-        );
-      },
+  transitionDuration: const Duration(milliseconds: 380),
+  reverseTransitionDuration: const Duration(milliseconds: 280),
+  pageBuilder: (_, _, _) => page,
+  transitionsBuilder: (_, a, _, child) {
+    final curve = CurvedAnimation(parent: a, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
+    return FadeTransition(
+      opacity: curve,
+      child: SlideTransition(
+        position: Tween(begin: const Offset(0, 0.12), end: Offset.zero).animate(curve),
+        child: child,
+      ),
     );
+  },
+);

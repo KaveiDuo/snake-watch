@@ -34,33 +34,44 @@ class _HomeShellState extends State<HomeShell> {
             )
           : null,
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(color: Color(0xFF161616), border: Border(top: BorderSide(color: Color(0xFF232323)))),
+        decoration: const BoxDecoration(
+          color: Color(0xFF161616),
+          border: Border(top: BorderSide(color: Color(0xFF232323))),
+        ),
         padding: EdgeInsets.fromLTRB(12, 8, 12, 8 + MediaQuery.of(context).padding.bottom),
-        child: Row(children: [
-          for (final (i, icon, activeIcon, label) in [
-            (0, Icons.home_outlined, Icons.home_rounded, 'Home'),
-            (1, Icons.restaurant_outlined, Icons.restaurant, 'Food'),
-            (2, Icons.directions_bus_outlined, Icons.directions_bus, 'Travel'),
-            (3, Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
-          ])
-            Expanded(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => setState(() => _tab = i),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  padding: const EdgeInsets.symmetric(vertical: 7),
-                  decoration: BoxDecoration(color: _tab == i ? C.greenSoft : Colors.transparent, borderRadius: BorderRadius.circular(16)),
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(_tab == i ? activeIcon : icon, size: 22, color: _tab == i ? C.green : C.sub),
-                    const SizedBox(height: 3),
-                    Text(label, style: ft(11, w: _tab == i ? 600 : 400, color: _tab == i ? C.green : C.sub)),
-                  ]),
+        child: Row(
+          children: [
+            for (final (i, icon, activeIcon, label) in [
+              (0, Icons.home_outlined, Icons.home_rounded, 'Home'),
+              (1, Icons.restaurant_outlined, Icons.restaurant, 'Food'),
+              (2, Icons.directions_bus_outlined, Icons.directions_bus, 'Travel'),
+              (3, Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
+            ])
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => setState(() => _tab = i),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    padding: const EdgeInsets.symmetric(vertical: 7),
+                    decoration: BoxDecoration(color: _tab == i ? C.greenSoft : Colors.transparent, borderRadius: BorderRadius.circular(16)),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(_tab == i ? activeIcon : icon, size: 22, color: _tab == i ? C.green : C.sub),
+                        const SizedBox(height: 3),
+                        Text(
+                          label,
+                          style: ft(11, w: _tab == i ? 600 : 400, color: _tab == i ? C.green : C.sub),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-        ]),
+          ],
+        ),
       ),
     );
   }
@@ -71,17 +82,24 @@ class _NotInDemo extends StatelessWidget {
   const _NotInDemo(this.name);
   @override
   Widget build(BuildContext context) => DarkPage(
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Text(name, style: ft(22, w: 700)),
-              const SizedBox(height: 8),
-              Text('$name isn’t part of this Snake Watch demo.', textAlign: TextAlign.center, style: ft(14, color: C.muted)),
-            ]),
-          ),
+    body: Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(name, style: ft(22, w: 700)),
+            const SizedBox(height: 8),
+            Text(
+              '$name isn’t part of this Snake Watch demo.',
+              textAlign: TextAlign.center,
+              style: ft(14, color: C.muted),
+            ),
+          ],
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _HomeTab extends StatelessWidget {
@@ -94,150 +112,229 @@ class _HomeTab extends StatelessWidget {
     final s = AppScope.of(context);
     final latest = s.latestOpen;
     return DarkPage(
-      body: ListView(padding: const EdgeInsets.fromLTRB(16, 4, 16, 100), children: [
-        Row(children: [
-          const SizedBox(width: 2),
-          Text.rich(TextSpan(children: [
-            TextSpan(text: 'One', style: ft(28, w: 700)),
-            TextSpan(text: '.', style: ft(28, w: 700, color: C.green)),
-          ])),
-          const Spacer(),
-          RoundButton(
-            Icons.notifications_none_rounded,
-            size: 42,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())),
-            badge: Container(width: 10, height: 10, decoration: BoxDecoration(color: C.red, shape: BoxShape.circle, border: Border.all(color: C.card2, width: 2))),
-          ),
-        ]),
-        const SizedBox(height: 14),
-        // Snake Watch alert card
-        Panel(
-          border: s.activeCount > 0 ? const Color(0xFF3A2E14) : C.line,
-          padding: EdgeInsets.zero,
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SnakeWatchScreen())),
-          child: IntrinsicHeight(
-            child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              if (s.activeCount > 0) Container(width: 3, color: C.amber),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      const Text('🐍', style: TextStyle(fontSize: 17)),
-                      const SizedBox(width: 8),
-                      Text('Snake Watch', style: ft(17, w: 700)),
-                      Text('  ·  ', style: ft(13, color: C.muted)),
-                      Text(s.activeCount > 0 ? '${s.activeCount} ACTIVE' : 'ALL CLEAR',
-                          style: ft(12.5, w: 700, color: s.activeCount > 0 ? C.amber : C.green, ls: 0.6)),
-                      const Spacer(),
-                      const Icon(Icons.chevron_right_rounded, color: C.muted),
-                    ]),
-                    const SizedBox(height: 8),
-                    if (latest != null) ...[
-                      Text(
-                        '${latest.treatAsVenomous ? (latest.venom == Venom.venomous ? 'Venomous snake' : 'Snake') : 'Harmless snake'} near ${latest.place.replaceAll(' Hostel', '')}',
-                        style: ft(17, color: C.text),
-                      ),
-                      const SizedBox(height: 4),
-                      Text('${latest.spot.isEmpty ? latest.place : latest.spot} · ${ago(latest.time)} · not yet cleared', style: ft(13, color: C.muted)),
-                    ] else
-                      Text('No active reports on campus', style: ft(15, color: C.muted)),
-                  ]),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+        children: [
+          Row(
+            children: [
+              const SizedBox(width: 2),
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(text: 'One', style: ft(28, w: 700)),
+                    TextSpan(
+                      text: '.',
+                      style: ft(28, w: 700, color: C.green),
+                    ),
+                  ],
                 ),
               ),
-            ]),
-          ),
-        ),
-        const SizedBox(height: 11),
-        Panel(
-          onTap: () => _soon(context, 'Time Table'),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              const Text('📅', style: TextStyle(fontSize: 17)),
-              const SizedBox(width: 8),
-              Text('Time Table', style: ft(17, w: 700)),
-              Text('  ·  7TH SEPTEMBER', style: ft(12, color: C.muted, ls: 0.6)),
               const Spacer(),
-              const Icon(Icons.chevron_right_rounded, color: C.muted),
-            ]),
-            const SizedBox(height: 8),
-            Text('No upcoming classes', style: ft(17, color: C.muted)),
-          ]),
-        ),
-        const SizedBox(height: 11),
-        IntrinsicHeight(
-          child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Expanded(
-              child: Panel(
-                onTap: () => _soon(context, 'Food'),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [const Text('🍲', style: TextStyle(fontSize: 16)), const SizedBox(width: 8), Text('Food', style: ft(17, w: 700))]),
-                  const SizedBox(height: 10),
-                  Text('DINNER · ENDS 9:30 PM', style: ft(10.5, color: C.muted, ls: 0.6)),
-                  const SizedBox(height: 8),
-                  for (final item in ['1. Veg Kofta / Egg curry', '2. Alo pata gobi matar', '3. Chana Dal fry', '4. Rice', '5. Roti'])
-                    Padding(padding: const EdgeInsets.only(bottom: 5), child: Text(item, style: ft(13.5, color: C.sub))),
-                ]),
+              RoundButton(
+                Icons.notifications_none_rounded,
+                size: 42,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())),
+                badge: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: C.red,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: C.card2, width: 2),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(width: 11),
-            Expanded(
-              child: Panel(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [const Text('🚪', style: TextStyle(fontSize: 16)), const SizedBox(width: 8), Text('Gatelog', style: ft(17, w: 700))]),
-                  const SizedBox(height: 12),
-                  for (final g in ['To City', 'To Khoka', 'Others'])
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: OutlinedButton(
-                        onPressed: () => _soon(context, 'Gatelog'),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: C.line2),
-                          shape: const StadiumBorder(),
-                          minimumSize: const Size.fromHeight(38),
-                        ),
-                        child: Text(g, style: ft(14, color: C.green)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // Snake Watch alert card
+          Panel(
+            border: s.activeCount > 0 ? const Color(0xFF3A2E14) : C.line,
+            padding: EdgeInsets.zero,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SnakeWatchScreen())),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (s.activeCount > 0) Container(width: 3, color: C.amber),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Text('🐍', style: TextStyle(fontSize: 17)),
+                              const SizedBox(width: 8),
+                              Text('Snake Watch', style: ft(17, w: 700)),
+                              Text('  ·  ', style: ft(13, color: C.muted)),
+                              Text(
+                                s.activeCount > 0 ? '${s.activeCount} ACTIVE' : 'ALL CLEAR',
+                                style: ft(12.5, w: 700, color: s.activeCount > 0 ? C.amber : C.green, ls: 0.6),
+                              ),
+                              const Spacer(),
+                              const Icon(Icons.chevron_right_rounded, color: C.muted),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          if (latest != null) ...[
+                            Text(
+                              '${latest.treatAsVenomous ? (latest.venom == Venom.venomous ? 'Venomous snake' : 'Snake') : 'Harmless snake'} near ${latest.place.replaceAll(' Hostel', '')}',
+                              style: ft(17, color: C.text),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${latest.spot.isEmpty ? latest.place : latest.spot} · ${ago(latest.time)} · not yet cleared',
+                              style: ft(13, color: C.muted),
+                            ),
+                          ] else
+                            Text('No active reports on campus', style: ft(15, color: C.muted)),
+                        ],
                       ),
                     ),
-                ]),
+                  ),
+                ],
               ),
             ),
-          ]),
-        ),
-        const SizedBox(height: 22),
-        Text('Quick Access', style: ft(22, w: 700)),
-        const SizedBox(height: 12),
-        GridView.count(
-          crossAxisCount: 4,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 0.82,
-          children: [
-            for (final (emoji, label) in [
-              ('🐍', 'Snake Watch'), ('📖', 'Snake Guide'), ('🚪', 'GateLog'), ('🪙', 'Library Token'),
-              ('👤', 'Contacts'), ('🚕', 'Cab Sharing'), ('🏪', 'SAC Room Booking'), ('📫', 'Complaints'),
-              ('🧰', 'Lost and Found'), ('🛍', 'Buy and Sell'), ('🏆', 'GC Score Board'), ('🏥', 'Medical Section'),
-            ])
-              InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: () {
-                  if (label == 'Snake Watch') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SnakeWatchScreen()));
-                  } else if (label == 'Snake Guide') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SnakeGuideScreen()));
-                  } else {
-                    _soon(context, label);
-                  }
-                },
-                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Text(emoji, style: const TextStyle(fontSize: 30)),
-                  const SizedBox(height: 6),
-                  Text(label, textAlign: TextAlign.center, style: ft(12.5, color: C.sub), maxLines: 2),
-                ]),
-              ),
-          ],
-        ),
-      ]),
+          ),
+          const SizedBox(height: 11),
+          Panel(
+            onTap: () => _soon(context, 'Time Table'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text('📅', style: TextStyle(fontSize: 17)),
+                    const SizedBox(width: 8),
+                    Text('Time Table', style: ft(17, w: 700)),
+                    Text('  ·  7TH SEPTEMBER', style: ft(12, color: C.muted, ls: 0.6)),
+                    const Spacer(),
+                    const Icon(Icons.chevron_right_rounded, color: C.muted),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text('No upcoming classes', style: ft(17, color: C.muted)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 11),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: Panel(
+                    onTap: () => _soon(context, 'Food'),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text('🍲', style: TextStyle(fontSize: 16)),
+                            const SizedBox(width: 8),
+                            Text('Food', style: ft(17, w: 700)),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text('DINNER · ENDS 9:30 PM', style: ft(10.5, color: C.muted, ls: 0.6)),
+                        const SizedBox(height: 8),
+                        for (final item in ['1. Veg Kofta / Egg curry', '2. Alo pata gobi matar', '3. Chana Dal fry', '4. Rice', '5. Roti'])
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 5),
+                            child: Text(item, style: ft(13.5, color: C.sub)),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Panel(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text('🚪', style: TextStyle(fontSize: 16)),
+                            const SizedBox(width: 8),
+                            Text('Gatelog', style: ft(17, w: 700)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        for (final g in ['To City', 'To Khoka', 'Others'])
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: OutlinedButton(
+                              onPressed: () => _soon(context, 'Gatelog'),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: C.line2),
+                                shape: const StadiumBorder(),
+                                minimumSize: const Size.fromHeight(38),
+                              ),
+                              child: Text(g, style: ft(14, color: C.green)),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 22),
+          Text('Quick Access', style: ft(22, w: 700)),
+          const SizedBox(height: 12),
+          GridView.count(
+            crossAxisCount: 4,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 0.82,
+            children: [
+              for (final (emoji, label) in [
+                ('🐍', 'Snake Watch'),
+                ('📖', 'Snake Guide'),
+                ('🚪', 'GateLog'),
+                ('🪙', 'Library Token'),
+                ('👤', 'Contacts'),
+                ('🚕', 'Cab Sharing'),
+                ('🏪', 'SAC Room Booking'),
+                ('📫', 'Complaints'),
+                ('🧰', 'Lost and Found'),
+                ('🛍', 'Buy and Sell'),
+                ('🏆', 'GC Score Board'),
+                ('🏥', 'Medical Section'),
+              ])
+                InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () {
+                    if (label == 'Snake Watch') {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SnakeWatchScreen()));
+                    } else if (label == 'Snake Guide') {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SnakeGuideScreen()));
+                    } else {
+                      _soon(context, label);
+                    }
+                  },
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(emoji, style: const TextStyle(fontSize: 30)),
+                      const SizedBox(height: 6),
+                      Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        style: ft(12.5, color: C.sub),
+                        maxLines: 2,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
