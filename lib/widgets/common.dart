@@ -225,7 +225,7 @@ class Tag extends StatelessWidget {
     switch (r.venom) {
       case Venom.venomous:
         return const Tag('VENOMOUS', fg: C.redText, bg: C.redSoft);
-      case Venom.harmless:
+      case Venom.nonVenomous:
         return const Tag('NON-VENOMOUS', fg: C.greenText, bg: C.greenSoft);
       case Venom.unsure:
         return const Tag('NOT SURE', fg: Color(0xFFFFC46B), bg: Color(0xFF2A1E0B));
@@ -242,7 +242,7 @@ class Tag extends StatelessWidget {
 
 /// Deep, saturated map-pin colours so pins stand out on the light map.
 const pinVenomous = Color(0xFFD92D20);
-const pinHarmless = Color(0xFF0E9384);
+const pinNonVenomous = Color(0xFF0E9384);
 const pinUnsure = Color(0xFFDC7900);
 const pinDropped = Color(0xFF16A34A);
 
@@ -254,8 +254,8 @@ Color pinColor(Report r) {
       return pinVenomous;
     case Venom.unsure:
       return pinUnsure;
-    case Venom.harmless:
-      return pinHarmless;
+    case Venom.nonVenomous:
+      return pinNonVenomous;
   }
 }
 

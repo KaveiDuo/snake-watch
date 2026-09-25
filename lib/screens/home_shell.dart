@@ -219,7 +219,7 @@ class _HomeTab extends StatelessWidget {
                           const SizedBox(height: 8),
                           if (latest != null) ...[
                             Text(
-                              '${latest.treatAsVenomous ? (latest.venom == Venom.venomous ? 'Venomous snake' : 'Snake') : 'Harmless snake'} near ${latest.place.replaceAll(' Hostel', '')}',
+                              '${latest.treatAsVenomous ? (latest.venom == Venom.venomous ? 'Venomous snake' : 'Snake') : 'Non-venomous snake'} near ${latest.place.replaceAll(' Hostel', '')}',
                               style: ft(17, color: C.text),
                             ),
                             const SizedBox(height: 4),

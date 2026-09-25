@@ -153,7 +153,7 @@ class _ReportScreenState extends State<ReportScreen> {
                   Text('Choose the closest match. You can change it later.', style: ft(13, color: C.muted)),
                   const SizedBox(height: 14),
                   _VenomOption(Venom.venomous, 'Venomous', 'Cobra, krait, viper or similar', const Color(0xFFFF453A)),
-                  _VenomOption(Venom.harmless, 'Non‑venomous', 'Rat snake, keelback, wolf snake…', C.green),
+                  _VenomOption(Venom.nonVenomous, 'Non‑venomous', 'Rat snake, keelback, wolf snake…', C.green),
                   _VenomOption(Venom.unsure, 'Not sure', 'We alert everyone as venomous to be safe', C.amber),
                 ],
                 if (loc != null && d.venom != null) ...[
@@ -377,7 +377,7 @@ class _SummaryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, color) = switch (venom) {
       Venom.venomous => ('Venomous', const Color(0xFFFF453A)),
-      Venom.harmless => ('Non-venomous', C.green),
+      Venom.nonVenomous => ('Non-venomous', C.green),
       Venom.unsure => ('Not sure', C.amber),
     };
     return Panel(

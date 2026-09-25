@@ -57,7 +57,7 @@ class _SnakeWatchScreenState extends State<SnakeWatchScreen> {
                       ),
                     ),
                   ),
-                  Positioned(left: 10, bottom: 10, right: 60, child: _Legend(dark: s.mapDark)),
+                  Positioned(left: 10, bottom: 10, right: 10, child: _Legend(dark: s.mapDark)),
                 ],
               ),
             ),
@@ -196,7 +196,7 @@ class _Legend extends StatelessWidget {
   const _Legend({required this.dark});
   @override
   Widget build(BuildContext context) {
-    final items = [('Venomous', pinVenomous), ('Harmless', pinHarmless), ('Unsure', pinUnsure), ('You', C.blue)];
+    final items = [('Venomous', pinVenomous), ('Non-venomous', pinNonVenomous), ('Unsure', pinUnsure), ('You', C.blue)];
     return Align(
       alignment: Alignment.bottomLeft,
       child: Container(
@@ -207,7 +207,7 @@ class _Legend extends StatelessWidget {
           border: Border.all(color: dark ? C.line2 : const Color(0xFFDDDDDD)),
         ),
         child: Wrap(
-          spacing: 9,
+          spacing: 7,
           runSpacing: 4,
           children: [
             for (final (l, c) in items)
@@ -222,7 +222,7 @@ class _Legend extends StatelessWidget {
                         )
                       : LocationPin(color: c, width: 9),
                   const SizedBox(width: 4),
-                  Text(l, style: ft(11, color: dark ? C.text : const Color(0xFF222222))),
+                  Text(l, style: ft(10.5, color: dark ? C.text : const Color(0xFF222222))),
                 ],
               ),
           ],

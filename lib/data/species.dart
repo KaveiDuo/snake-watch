@@ -40,7 +40,7 @@ const species = <Species>[
     'Greater Black Krait',
     'Bungarus niger',
     true,
-    'Glossy, plain dark body with a pale belly. Active at night and easily mistaken for harmless snakes. Treat as dangerous.',
+    'Glossy, plain dark body with a pale belly. Active at night and easily mistaken for non-venomous snakes. Treat as dangerous.',
   ),
   Species(
     'lesser_black_krait',
@@ -70,20 +70,20 @@ const species = <Species>[
     true,
     'Olive body with a red or orange neck, found near water. Its bite can cause serious bleeding; treat as venomous.',
   ),
-  // Harmless · 16
+  // Non-venomous · 16
   Species(
     'rat',
     'Indian Rat Snake',
     'Ptyas mucosa',
     false,
-    'Long and fast-moving, often mistaken for a cobra when it rears up. Harmless and helps control rodents.',
+    'Long and fast-moving, often mistaken for a cobra when it rears up. Non-venomous and helps control rodents.',
   ),
   Species(
     'korros',
     'Indo-Chinese Rat Snake',
     'Ptyas korros',
     false,
-    'Slender, quick and olive-brown, often near water. Harmless; eats rodents and frogs.',
+    'Slender, quick and olive-brown, often near water. Non-venomous; eats rodents and frogs.',
   ),
   Species(
     'wolf',
@@ -104,7 +104,7 @@ const species = <Species>[
     'Buff-striped Keelback',
     'Amphiesma stolatum',
     false,
-    'Small, with pale stripes along the back and dark bars on the sides. Harmless; hunts frogs in damp grass.',
+    'Small, with pale stripes along the back and dark bars on the sides. Non-venomous; hunts frogs in damp grass.',
   ),
   Species(
     'vine',
@@ -118,14 +118,14 @@ const species = <Species>[
     'Copper-headed Trinket Snake',
     'Coelognathus radiatus',
     false,
-    'Copper-orange head with black stripes near the neck. Fast and may flatten its neck when threatened; harmless.',
+    'Copper-orange head with black stripes near the neck. Fast and may flatten its neck when threatened; non-venomous.',
   ),
   Species(
     'trinket',
     'Common Trinket Snake',
     'Coelognathus helena',
     false,
-    'Tan-olive with dark cross-bands near the head. Harmless; often found in stone piles and gardens.',
+    'Tan-olive with dark cross-bands near the head. Non-venomous; often found in stone piles and gardens.',
   ),
   Species(
     'bronzeback',
@@ -146,7 +146,7 @@ const species = <Species>[
     'White-barred Kukri Snake',
     'Oligodon albocinctus',
     false,
-    'Small and reddish-brown with thin pale bands, often mistaken for a krait. Harmless; feeds on eggs.',
+    'Small and reddish-brown with thin pale bands, often mistaken for a krait. Non-venomous; feeds on eggs.',
   ),
   Species(
     'green_cat',
@@ -181,7 +181,7 @@ const species = <Species>[
     'Brahminy Blindsnake',
     'Indotyphlops braminus',
     false,
-    'Tiny, shiny black worm-like snake found in soil and flowerpots. Harmless.',
+    'Tiny, shiny black worm-like snake found in soil and flowerpots. Non-venomous.',
   ),
 ];
 

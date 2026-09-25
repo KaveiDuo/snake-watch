@@ -120,7 +120,7 @@ LatLng zoneCentre(String name) {
   );
 }
 
-enum Venom { venomous, harmless, unsure }
+enum Venom { venomous, nonVenomous, unsure }
 
 enum Role { none, student, authority }
 
@@ -166,9 +166,9 @@ class Report {
   }) : time = time ?? DateTime.now();
 
   Species? get sp => speciesId == null ? null : speciesById(speciesId!);
-  String get title => sp?.name ?? (venom == Venom.harmless ? 'Harmless snake' : 'Unidentified snake');
+  String get title => sp?.name ?? (venom == Venom.nonVenomous ? 'Non-venomous snake' : 'Unidentified snake');
   String get where => spot.isEmpty ? place : '$place · $spot';
-  bool get treatAsVenomous => venom != Venom.harmless;
+  bool get treatAsVenomous => venom != Venom.nonVenomous;
 }
 
 String ago(DateTime t) {
@@ -279,7 +279,7 @@ class AppState extends ChangeNotifier {
     Report(
       id: 'r2',
       speciesId: 'keelback',
-      venom: Venom.harmless,
+      venom: Venom.nonVenomous,
       place: 'Kameng Hostel',
       spot: 'near the mess hall',
       note: 'Saw it near the mess hall drain this morning, it moved off toward the hedge.',
@@ -301,7 +301,7 @@ class AppState extends ChangeNotifier {
     Report(
       id: 'r4',
       speciesId: 'wolf',
-      venom: Venom.harmless,
+      venom: Venom.nonVenomous,
       place: 'Kameng Hostel',
       spot: 'near the parking area',
       note: 'Small banded snake near the bike parking, guard moved it to the green belt.',
@@ -314,7 +314,7 @@ class AppState extends ChangeNotifier {
     Report(
       id: 'r5',
       speciesId: 'rat',
-      venom: Venom.harmless,
+      venom: Venom.nonVenomous,
       place: 'Core 3',
       spot: 'rear stairs',
       note: 'Long snake on the rear stairs, went under the steps.',
@@ -393,7 +393,7 @@ class AppState extends ChangeNotifier {
     draft.matchedId = matchedId;
     if (matchedId != null) {
       draft.speciesId = matchedId;
-      draft.venom = speciesById(matchedId).venomous ? Venom.venomous : Venom.harmless;
+      draft.venom = speciesById(matchedId).venomous ? Venom.venomous : Venom.nonVenomous;
     }
     notifyListeners();
   }
