@@ -23,6 +23,8 @@ void main() {
     expect(s.locFromMap(const LatLng(26.18574, 91.68935)).name, 'Core 5');
     expect(s.locFromMap(const LatLng(26.19665, 91.69748)).name, 'IITG Hospital');
     expect(s.locFromMap(const LatLng(26.19248, 91.69901)).name, 'New SAC');
+    expect(s.locFromMap(const LatLng(26.19580, 91.68998)).name, 'D-type Quarters');
+    expect(s.locFromMap(const LatLng(26.19418, 91.69236)).name, 'IIT Guwahati Viewpoint');
     final field = s.locFromMap(const LatLng(26.19506, 91.70221)); // cricket ground
     expect(field.covered, isFalse);
     expect(field.name, 'Open area');
