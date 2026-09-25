@@ -1,0 +1,40 @@
+name: snake_watch
+description: "Onestop · Snake Watch (demo)"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  url_launcher: ^6.3.1
+  image_picker: ^1.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/snakes/
+
+  fonts:
+    - family: Figtree
+      fonts:
+        - asset: assets/fonts/Figtree.ttf
+    - family: Geist
+      fonts:
+        - asset: assets/fonts/Geist.ttf
+    - family: Montserrat
+      fonts:
+        - asset: assets/fonts/Montserrat.ttf
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf

@@ -1,0 +1,141 @@
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+
+import '../data/app_state.dart';
+import '../theme.dart';
+import '../widgets/common.dart';
+import 'sos.dart';
+
+class SightingDetailScreen extends StatelessWidget {
+  final Report report;
+  const SightingDetailScreen({super.key, required this.report});
+
+  @override
+  Widget build(BuildContext context) {
+    AppScope.of(context); // rebuild when the report is marked safe
+    final r = report;
+    final photo = r.photoPath != null
+        ? (r.photoPath!.startsWith('assets/') ? Image.asset(r.photoPath!, fit: BoxFit.cover) : Image.file(File(r.photoPath!), fit: BoxFit.cover))
+        : (r.sp != null ? Image.asset(r.sp!.photo, fit: BoxFit.cover) : null);
+    final d = (youAreHere - r.pos).distance * 3.2; // demo: map pixels → metres
+    return Scaffold(
+      backgroundColor: C.bg,
+      body: ListView(padding: EdgeInsets.zero, children: [
+        SizedBox(
+          height: 300,
+          child: Stack(fit: StackFit.expand, children: [
+            photo ?? Container(color: const Color(0xFF1E1E1E), child: Icon(Icons.help_outline_rounded, size: 80, color: pinColor(r))),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x66000000), Color(0x00000000), Color(0xF20F0F0F)], stops: [0, 0.45, 1]),
+              ),
+            ),
+            Positioned(left: 16, top: MediaQuery.of(context).padding.top + 8, child: RoundButton(Icons.chevron_left_rounded, onTap: () => Navigator.pop(context))),
+            Positioned(
+              left: 18,
+              right: 18,
+              bottom: 14,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Tag.forReport(r),
+                const SizedBox(height: 8),
+                Text(r.title, style: ft(26, w: 700)),
+                Text(r.where, style: ft(13.5, color: C.sub)),
+              ]),
+            ),
+          ]),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 30),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(color: const Color(0xFF142033), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFF203556))),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.near_me_outlined, size: 15, color: C.blue),
+                const SizedBox(width: 6),
+                Text('About ${(d / 10).round() * 10} m from you', style: ft(13, w: 600, color: const Color(0xFF8AB4FF))),
+              ]),
+            ),
+            const SizedBox(height: 14),
+            if (r.note.isNotEmpty)
+              Panel(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('“${r.note}”', style: ft(14.5, color: C.text, height: 1.45)),
+                  const SizedBox(height: 8),
+                  Text('Reported by ${r.reporter} · ${ago(r.time)}', style: ft(12, color: C.muted)),
+                ]),
+              ),
+            const SizedBox(height: 20),
+            Text('STATUS', style: ft(11.5, w: 700, color: C.muted, ls: 1.2)),
+            const SizedBox(height: 12),
+            _Step('Reported', '${r.reporter} · ${ago(r.time)}', C.green, true),
+            _Step('Students nearby notified', '412 students within 500 m', C.green, true),
+            if (r.covered)
+              r.safe
+                  ? _Step('Marked safe by the ${r.place} authority', 'Pin removed for everyone · reporter notified', C.green, false)
+                  : _Step('Sent to the ${r.place} authority', 'Awaiting their reply', C.amber, false)
+            else
+              _Step('Open area · no hostel authority', r.safe ? 'Marked safe' : 'The pin clears itself after 2–3 days', r.safe ? C.green : C.amber, false),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(color: const Color(0xFF1C170C), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFF3A2E14))),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Icon(Icons.warning_amber_rounded, color: C.amber, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text('Do not approach or try to move it. Keep 3 metres back, keep others away, and wait for the guard.',
+                      style: ft(13, color: const Color(0xFFD9B86A), height: 1.45)),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 12),
+            Panel(
+              border: const Color(0xFF4A1A17),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SosScreen())),
+              child: Row(children: [
+                const Icon(Icons.phone_in_talk_outlined, color: C.red, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('Someone was bitten?', style: ft(14.5, w: 600)),
+                    Text('Open emergency SOS', style: ft(12, color: C.muted)),
+                  ]),
+                ),
+                const Icon(Icons.chevron_right_rounded, color: C.muted),
+              ]),
+            ),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+class _Step extends StatelessWidget {
+  final String title, sub;
+  final Color color;
+  final bool line;
+  const _Step(this.title, this.sub, this.color, this.line);
+  @override
+  Widget build(BuildContext context) => IntrinsicHeight(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Column(children: [
+            Container(width: 12, height: 12, margin: const EdgeInsets.only(top: 3), decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+            if (line) Expanded(child: Container(width: 2, color: C.green.withValues(alpha: 0.5))),
+          ]),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, style: ft(14.5, w: 600, color: color == C.amber ? const Color(0xFFFFC46B) : C.text)),
+                const SizedBox(height: 2),
+                Text(sub, style: ft(12, color: C.muted)),
+              ]),
+            ),
+          ),
+        ]),
+      );
+}

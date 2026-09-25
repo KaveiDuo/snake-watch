@@ -1,0 +1,715 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../data/app_state.dart';
+import '../data/places.dart';
+import '../data/species.dart';
+import '../theme.dart';
+import '../widgets/campus_map.dart';
+import '../widgets/common.dart';
+import 'identify.dart';
+import 'snake_watch.dart';
+
+Future<String?> pickPhoto(BuildContext context) async {
+  final source = await showModalBottomSheet<ImageSource>(
+    context: context,
+    backgroundColor: C.card,
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+    builder: (c) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 14, 12, 8),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(
+            leading: const Icon(Icons.photo_camera_outlined, color: C.green),
+            title: Text('Take a photo', style: ft(15)),
+            subtitle: Text('Keep 3 m back — zoom in instead', style: ft(12, color: C.muted)),
+            onTap: () => Navigator.pop(c, ImageSource.camera),
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_library_outlined, color: C.green),
+            title: Text('Choose from gallery', style: ft(15)),
+            onTap: () => Navigator.pop(c, ImageSource.gallery),
+          ),
+        ]),
+      ),
+    ),
+  );
+  if (source == null) return null;
+  final x = await ImagePicker().pickImage(source: source, maxWidth: 1600, imageQuality: 85);
+  return x?.path;
+}
+
+class ReportScreen extends StatefulWidget {
+  const ReportScreen({super.key});
+  @override
+  State<ReportScreen> createState() => _ReportScreenState();
+}
+
+class _ReportScreenState extends State<ReportScreen> {
+  Timer? _finding;
+  final _note = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final s = AppScope.read(context);
+    if (s.draft.loc == null) {
+      // Simulated GPS fix.
+      _finding = Timer(const Duration(milliseconds: 1300), () {
+        if (mounted && s.draft.loc == null) s.setDraftLoc(detectedLoc);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _finding?.cancel();
+    _note.dispose();
+    super.dispose();
+  }
+
+  Future<void> _changeLocation() async {
+    final loc = await showModalBottomSheet<Loc>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const LocationSheet(),
+    );
+    if (loc != null && mounted) AppScope.read(context).setDraftLoc(loc);
+  }
+
+  void _submit() {
+    final s = AppScope.read(context);
+    s.draft.note = _note.text.trim();
+    final r = s.submit();
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => ReportedScreen(report: r)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final d = s.draft;
+    final loc = d.loc;
+    final step = loc == null ? 0 : (d.venom == null ? 1 : 2);
+    return DarkPage(
+      header: const AppHeader('Report a sighting'),
+      body: Column(children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          child: Row(children: [
+            for (var i = 0; i < 3; i++) ...[
+              if (i > 0) const SizedBox(width: 7),
+              Expanded(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  height: 3,
+                  decoration: BoxDecoration(color: i <= step ? C.green : const Color(0xFF2A2A2A), borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+            ],
+          ]),
+        ),
+        Expanded(
+          child: ListView(padding: const EdgeInsets.fromLTRB(16, 14, 16, 16), children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1C170C),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF3A2E14)),
+              ),
+              child: Row(children: [
+                const Icon(Icons.warning_amber_rounded, color: C.amber, size: 18),
+                const SizedBox(width: 10),
+                Expanded(child: Text('Keep 3 m back. Do not approach or try to move the snake.', style: ft(12.5, color: const Color(0xFFD9B86A)))),
+              ]),
+            ),
+            const SizedBox(height: 12),
+            _WhereCard(loc: loc, onChange: _changeLocation),
+            const SizedBox(height: 20),
+            if (loc != null && d.venom == null) ...[
+              Text('Is it venomous?', style: ft(20, w: 700)),
+              const SizedBox(height: 6),
+              Text('Choose the closest match. You can change it later.', style: ft(13, color: C.muted)),
+              const SizedBox(height: 14),
+              _VenomOption(Venom.venomous, 'Venomous', 'Cobra, krait, viper or similar', const Color(0xFFFF453A)),
+              _VenomOption(Venom.harmless, 'Non‑venomous', 'Rat snake, keelback, wolf snake…', C.green),
+              _VenomOption(Venom.unsure, 'Not sure', 'We alert everyone as venomous to be safe', C.amber),
+            ],
+            if (loc != null && d.venom != null) ...[
+              _SummaryRow(venom: d.venom!, onChange: () => setState(() => d.venom = null)),
+              const SizedBox(height: 18),
+              Row(children: [
+                Text('Which snake?', style: ft(20, w: 700)),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(color: const Color(0xFF262626), borderRadius: BorderRadius.circular(8)),
+                  child: Text('optional', style: ft(11, color: C.muted)),
+                ),
+              ]),
+              const SizedBox(height: 6),
+              Text('Helps the hostel authority prepare. Skip it if you are not sure.', style: ft(13, color: C.muted)),
+              const SizedBox(height: 14),
+              if (d.photoPath != null)
+                _PhotoAttached(path: d.photoPath!, matchedId: d.matchedId, onRemove: () => s.setPhoto(null))
+              else
+                Row(children: [
+                  Expanded(
+                    child: _SmallAction(Icons.center_focus_strong_outlined, 'Scan to identify', () async {
+                      final res = await Navigator.push<IdentifyResult>(context, MaterialPageRoute(builder: (_) => const IdentifyScreen(forReport: true)));
+                      if (res != null) s.setPhoto(res.photoPath, matchedId: res.speciesId);
+                    }),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _SmallAction(Icons.add_photo_alternate_outlined, 'Add photo', () async {
+                      final p = await pickPhoto(context);
+                      if (p != null) s.setPhoto(p);
+                    }),
+                  ),
+                ]),
+              const SizedBox(height: 14),
+              SizedBox(
+                height: 132,
+                child: ListView(scrollDirection: Axis.horizontal, children: [
+                  for (final sp in species.where((x) => d.venom == Venom.unsure || x.venomous == (d.venom == Venom.venomous)))
+                    _SpeciesCard(sp: sp, selected: d.speciesId == sp.id, onTap: () => s.setSpecies(sp.id)),
+                  _CouldntTell(selected: d.speciesId == null, onTap: () => s.setSpecies(null)),
+                ]),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _note,
+                minLines: 1,
+                maxLines: 3,
+                style: ft(14),
+                cursorColor: C.green,
+                decoration: InputDecoration(
+                  hintText: 'Add a note — where exactly, what it did (optional)',
+                  hintStyle: ft(13.5, color: C.faint),
+                  filled: true,
+                  fillColor: C.card,
+                  contentPadding: const EdgeInsets.all(14),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: C.line)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: C.line)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: C.green)),
+                ),
+              ),
+            ],
+          ]),
+        ),
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+          decoration: const BoxDecoration(border: Border(top: BorderSide(color: C.line))),
+          child: Column(children: [
+            Btn('Report sighting', kind: BtnKind.danger, onTap: loc != null && d.venom != null ? _submit : null),
+            const SizedBox(height: 8),
+            Text(
+              loc == null
+                  ? 'Waiting for your location…'
+                  : d.venom == null
+                      ? 'Answer the question above to continue'
+                      : loc.covered
+                          ? 'Alerts the ${loc.authority} and students nearby'
+                          : 'Alerts students nearby · no hostel authority for this spot',
+              style: ft(11.5, color: C.muted),
+              textAlign: TextAlign.center,
+            ),
+            if (d.venom != null) Text('Posted as Ananya S. · ${s.studentEmail}', style: ft(11, color: C.faint)),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+class _WhereCard extends StatelessWidget {
+  final Loc? loc;
+  final VoidCallback onChange;
+  const _WhereCard({required this.loc, required this.onChange});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = loc;
+    final icon = l == null
+        ? null
+        : l.source.startsWith('Detected')
+            ? Icons.my_location_rounded
+            : l.source.startsWith('Pinned')
+                ? Icons.push_pin_outlined
+                : Icons.list_alt_rounded;
+    return Panel(
+      padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+      child: Row(children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: const BoxDecoration(color: C.greenSoft, shape: BoxShape.circle),
+          child: l == null
+              ? const Padding(padding: EdgeInsets.all(13), child: CircularProgressIndicator(strokeWidth: 2, color: C.green))
+              : const Icon(Icons.location_on_outlined, color: C.green),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(l?.name ?? 'Finding your location…', style: ft(16, w: 700)),
+            const SizedBox(height: 3),
+            Row(children: [
+              if (icon != null) ...[Icon(icon, size: 13, color: C.green), const SizedBox(width: 5)],
+              Flexible(child: Text(l?.source ?? 'Using your phone’s GPS', style: ft(12.5, color: l == null ? C.muted : C.green))),
+            ]),
+          ]),
+        ),
+        TextButton(onPressed: onChange, child: Text(l == null ? 'Choose place' : 'Change', style: ft(14, w: 600, color: C.green))),
+      ]),
+    );
+  }
+}
+
+class _VenomOption extends StatelessWidget {
+  final Venom v;
+  final String title, sub;
+  final Color dot;
+  const _VenomOption(this.v, this.title, this.sub, this.dot);
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Panel(
+          onTap: () => AppScope.read(context).setVenom(v),
+          child: Row(children: [
+            Container(width: 12, height: 12, decoration: BoxDecoration(color: dot, shape: BoxShape.circle)),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, style: ft(15.5, w: 600)),
+                const SizedBox(height: 2),
+                Text(sub, style: ft(12.5, color: C.muted)),
+              ]),
+            ),
+            Container(width: 20, height: 20, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFF4A4A4A), width: 1.5))),
+          ]),
+        ),
+      );
+}
+
+class _SummaryRow extends StatelessWidget {
+  final Venom venom;
+  final VoidCallback onChange;
+  const _SummaryRow({required this.venom, required this.onChange});
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (venom) {
+      Venom.venomous => ('Venomous', const Color(0xFFFF453A)),
+      Venom.harmless => ('Non-venomous', C.green),
+      Venom.unsure => ('Not sure', C.amber),
+    };
+    return Panel(
+      padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
+      child: Row(children: [
+        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 12),
+        Expanded(child: Text(label, style: ft(15, w: 600))),
+        TextButton(onPressed: onChange, child: Text('Change', style: ft(14, w: 600, color: C.green))),
+      ]),
+    );
+  }
+}
+
+class _SmallAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const _SmallAction(this.icon, this.label, this.onTap);
+  @override
+  Widget build(BuildContext context) => Material(
+        color: C.greenSoft,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: Color(0xFF245A36))),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: SizedBox(
+            height: 44,
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(icon, size: 18, color: C.green),
+              const SizedBox(width: 8),
+              Text(label, style: ft(13.5, w: 600, color: C.greenText)),
+            ]),
+          ),
+        ),
+      );
+}
+
+class _PhotoAttached extends StatelessWidget {
+  final String path;
+  final String? matchedId;
+  final VoidCallback onRemove;
+  const _PhotoAttached({required this.path, required this.matchedId, required this.onRemove});
+  @override
+  Widget build(BuildContext context) {
+    final isAsset = path.startsWith('assets/');
+    return Panel(
+      padding: const EdgeInsets.fromLTRB(10, 10, 6, 10),
+      border: const Color(0xFF245A36),
+      child: Row(children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: SizedBox(width: 52, height: 52, child: isAsset ? Image.asset(path, fit: BoxFit.cover) : Image.file(File(path), fit: BoxFit.cover)),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Photo attached', style: ft(14.5, w: 600)),
+            if (matchedId != null) Text('Matched ${speciesById(matchedId!).name}', style: ft(12.5, color: C.green)),
+          ]),
+        ),
+        TextButton(onPressed: onRemove, child: Text('Remove', style: ft(13, w: 600, color: C.redText))),
+      ]),
+    );
+  }
+}
+
+class _SpeciesCard extends StatelessWidget {
+  final Species sp;
+  final bool selected;
+  final VoidCallback onTap;
+  const _SpeciesCard({required this.sp, required this.selected, required this.onTap});
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 100,
+          margin: const EdgeInsets.only(right: 10),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: selected ? C.green : Colors.transparent, width: 2),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(11),
+                child: SizedBox(width: 92, height: 72, child: Image.asset(sp.photo, fit: BoxFit.cover)),
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(sp.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: ft(12, w: selected ? 700 : 500, color: selected ? C.green : C.text, height: 1.2)),
+            Text(sp.latin, maxLines: 1, overflow: TextOverflow.ellipsis, style: ft(10, color: C.faint).copyWith(fontStyle: FontStyle.italic)),
+          ]),
+        ),
+      );
+}
+
+class _CouldntTell extends StatelessWidget {
+  final bool selected;
+  final VoidCallback onTap;
+  const _CouldntTell({required this.selected, required this.onTap});
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: SizedBox(
+          width: 100,
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              width: 96,
+              height: 76,
+              decoration: BoxDecoration(
+                color: C.card,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: selected ? C.green : C.line, width: selected ? 2 : 1),
+              ),
+              alignment: Alignment.center,
+              child: Text('?', style: ft(28, w: 700, color: C.muted)),
+            ),
+            const SizedBox(height: 5),
+            Text("Couldn't tell", style: ft(12, w: selected ? 700 : 500, color: selected ? C.green : C.text)),
+            Text('no photo needed', style: ft(10, color: C.faint)),
+          ]),
+        ),
+      );
+}
+
+/// "Select location" bottom sheet with working search.
+class LocationSheet extends StatefulWidget {
+  const LocationSheet({super.key});
+  @override
+  State<LocationSheet> createState() => _LocationSheetState();
+}
+
+class _LocationSheetState extends State<LocationSheet> {
+  String _q = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.read(context);
+    final q = _q.toLowerCase();
+    return DraggableScrollableSheet(
+      initialChildSize: 0.78,
+      maxChildSize: 0.95,
+      minChildSize: 0.4,
+      builder: (context, scroll) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF1B1B1B),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          border: Border(top: BorderSide(color: C.line2)),
+        ),
+        child: ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(16, 10, 16, 30), children: [
+          Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFF444444), borderRadius: BorderRadius.circular(2)))),
+          const SizedBox(height: 16),
+          Text('Select location', style: ft(20, w: 700)),
+          const SizedBox(height: 14),
+          TextField(
+            onChanged: (v) => setState(() => _q = v),
+            style: ft(14.5),
+            cursorColor: C.green,
+            decoration: InputDecoration(
+              hintText: 'Search hostels and campus places',
+              hintStyle: ft(14, color: C.faint),
+              prefixIcon: const Icon(Icons.search_rounded, color: C.muted),
+              filled: true,
+              fillColor: const Color(0xFF262626),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (q.isEmpty) ...[
+            _SheetAction(Icons.my_location_rounded, 'Use my current location', () => Navigator.pop(context, detectedLoc)),
+            const SizedBox(height: 10),
+            _SheetAction(Icons.map_outlined, 'Pick the exact spot on the map', () async {
+              final loc = await Navigator.push<Loc>(context, MaterialPageRoute(builder: (_) => PickOnMapScreen(start: s.draft.loc)));
+              if (loc != null && context.mounted) Navigator.pop(context, loc);
+            }),
+          ],
+          for (final g in placeGroups) ...[
+            if (g.places.any((p) => p.toLowerCase().contains(q))) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 22, 0, 6),
+                child: Text(g.title, style: ft(11.5, w: 700, color: C.muted, ls: 1.2)),
+              ),
+              for (final p in g.places.where((p) => p.toLowerCase().contains(q)))
+                InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => Navigator.pop(context, s.locFromList(p, g.hostels)),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 11),
+                    child: Row(children: [
+                      const Icon(Icons.location_on_outlined, color: C.muted, size: 20),
+                      const SizedBox(width: 14),
+                      Expanded(child: Text(p, style: ft(15.5))),
+                    ]),
+                  ),
+                ),
+            ],
+          ],
+        ]),
+      ),
+    );
+  }
+}
+
+class _SheetAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const _SheetAction(this.icon, this.label, this.onTap);
+  @override
+  Widget build(BuildContext context) => Material(
+        color: C.greenSoft,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Color(0xFF245A36))),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+            child: Row(children: [
+              Icon(icon, color: C.green, size: 20),
+              const SizedBox(width: 12),
+              Text(label, style: ft(15, w: 600, color: C.greenText)),
+            ]),
+          ),
+        ),
+      );
+}
+
+/// Tap anywhere on the map to drop the pin. Only Kameng Hostel's boundary is
+/// drawn in this demo, so taps outside it count as an open area.
+class PickOnMapScreen extends StatefulWidget {
+  final Loc? start;
+  const PickOnMapScreen({super.key, this.start});
+  @override
+  State<PickOnMapScreen> createState() => _PickOnMapScreenState();
+}
+
+class _PickOnMapScreenState extends State<PickOnMapScreen> {
+  late Loc _loc = widget.start ?? detectedLoc;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return DarkPage(
+      header: const AppHeader('Pick the exact spot'),
+      body: Column(children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: CampusMap(
+              dark: s.mapDark,
+              showZone: true,
+              selected: _loc.pos,
+              onToggleTheme: s.toggleMap,
+              onTapMap: (p) => setState(() => _loc = s.locFromMap(p)),
+              topHint: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                decoration: BoxDecoration(
+                  color: s.mapDark ? const Color(0xE61C1C1C) : const Color(0xF2FFFFFF),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: s.mapDark ? C.line2 : const Color(0xFFDDDDDD)),
+                ),
+                child: Text('Tap the map to mark exactly where you saw it',
+                    textAlign: TextAlign.center, style: ft(12, color: s.mapDark ? C.text : const Color(0xFF222222))),
+              ),
+            ),
+          ),
+        ),
+        Container(
+          margin: const EdgeInsets.only(top: 10),
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+          decoration: const BoxDecoration(
+            color: Color(0xFF141A16),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(top: BorderSide(color: C.line2)),
+          ),
+          child: Column(children: [
+            Row(children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(color: _loc.covered ? C.greenSoft : const Color(0xFF2A1E0B), shape: BoxShape.circle),
+                child: Icon(_loc.covered ? Icons.location_on_outlined : Icons.park_outlined, color: _loc.covered ? C.green : C.amber),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(_loc.covered ? _loc.name : 'Open area', style: ft(17, w: 700)),
+                  const SizedBox(height: 3),
+                  Text(
+                    _loc.covered
+                        ? 'Inside ${_loc.name} premises · the ${_loc.name.replaceAll(' Hostel', '')} hostel authority covers this spot'
+                        : 'No hostel authority covers this spot · students nearby are still alerted',
+                    style: ft(12.5, color: C.muted, height: 1.4),
+                  ),
+                ]),
+              ),
+            ]),
+            const SizedBox(height: 14),
+            Btn('Use this spot', onTap: () => Navigator.pop(context, _loc)),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+class ReportedScreen extends StatefulWidget {
+  final Report report;
+  const ReportedScreen({super.key, required this.report});
+  @override
+  State<ReportedScreen> createState() => _ReportedScreenState();
+}
+
+class _ReportedScreenState extends State<ReportedScreen> with SingleTickerProviderStateMixin {
+  late final AnimationController _a = AnimationController(vsync: this, duration: const Duration(milliseconds: 700))..forward();
+
+  @override
+  void dispose() {
+    _a.dispose();
+    super.dispose();
+  }
+
+  Future<void> _whatsApp() async {
+    final r = widget.report;
+    final text = 'To: ${r.place} authority\n\n'
+        'SNAKE REPORT · ${r.venom == Venom.venomous ? 'VENOMOUS' : r.venom == Venom.harmless ? 'NON-VENOMOUS' : 'NOT SURE'}\n\n'
+        '${r.title} reported at ${r.where}.\n'
+        '${r.note.isEmpty ? '' : '\nNote: “${r.note}”\n'}'
+        '\nReported just now via Onestop by a student.';
+    final uri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(text)}');
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && mounted) {
+      toast(context, 'WhatsApp isn’t installed on this phone');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final r = widget.report;
+    return DarkPage(
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Column(children: [
+          const Spacer(flex: 3),
+          ScaleTransition(
+            scale: CurvedAnimation(parent: _a, curve: Curves.elasticOut),
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: C.green.withValues(alpha: 0.15),
+                border: Border.all(color: C.green.withValues(alpha: 0.4), width: 2),
+              ),
+              alignment: Alignment.center,
+              child: Container(
+                width: 76,
+                height: 76,
+                decoration: const BoxDecoration(shape: BoxShape.circle, color: C.green),
+                child: const Icon(Icons.check_rounded, color: C.greenInk, size: 44),
+              ),
+            ),
+          ),
+          const SizedBox(height: 28),
+          Text('Sighting reported', style: ft(28, w: 700)),
+          const SizedBox(height: 10),
+          Text('Students nearby have been notified and can see your pin on Snake Watch.',
+              textAlign: TextAlign.center, style: ft(14.5, color: C.muted, height: 1.45)),
+          const Spacer(flex: 4),
+          if (r.covered) ...[
+            Btn('Also send it on WhatsApp', kind: BtnKind.whatsapp, icon: Icons.chat_rounded, onTap: _whatsApp),
+            const SizedBox(height: 8),
+            Text('Optional · goes only to the ${r.place} authority', style: ft(11.5, color: C.faint)),
+          ] else
+            Panel(
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Icon(Icons.schedule_rounded, color: C.green, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('Open area · no hostel authority', style: ft(13.5, w: 600)),
+                    const SizedBox(height: 4),
+                    Text('Nobody needs a WhatsApp alert for this spot. The pin clears itself from Snake Watch after 2–3 days.',
+                        style: ft(12.5, color: C.muted, height: 1.4)),
+                  ]),
+                ),
+              ]),
+            ),
+          const SizedBox(height: 14),
+          Row(children: [
+            Expanded(child: Btn('Home', kind: BtnKind.ghost, height: 48, onTap: () => Navigator.popUntil(context, (r) => r.isFirst))),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Btn('Snake Watch', kind: BtnKind.ghost, height: 48, onTap: () {
+                final nav = Navigator.of(context);
+                nav.popUntil((r) => r.isFirst);
+                nav.push(MaterialPageRoute(builder: (_) => const SnakeWatchScreen()));
+              }),
+            ),
+          ]),
+        ]),
+      ),
+    );
+  }
+}

@@ -1,0 +1,174 @@
+import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../data/app_state.dart';
+import '../theme.dart';
+import '../widgets/common.dart';
+
+/// Emergency SOS: hold the button for 1.5 s to "call". The demo shows the
+/// calling screen; "Call now" opens the phone dialler with the hospital number.
+class SosScreen extends StatefulWidget {
+  const SosScreen({super.key});
+  @override
+  State<SosScreen> createState() => _SosScreenState();
+}
+
+class _SosScreenState extends State<SosScreen> with SingleTickerProviderStateMixin {
+  static const hospital = '03612582100';
+  late final AnimationController _hold = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))
+    ..addStatusListener((st) {
+      if (st == AnimationStatus.completed) setState(() => _calling = true);
+    });
+  bool _calling = false;
+
+  @override
+  void dispose() {
+    _hold.dispose();
+    super.dispose();
+  }
+
+  Future<void> _dial() async {
+    if (!await launchUrl(Uri.parse('tel:$hospital')) && mounted) toast(context, 'Could not open the dialler');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final last = s.latestOpen;
+    return Scaffold(
+      backgroundColor: const Color(0xFF140A0A),
+      body: SafeArea(
+        child: Column(children: [
+          AppHeader('Emergency SOS', backIcon: Icons.close_rounded),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 350),
+              child: _calling ? _callingView(last) : _holdView(last),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _holdView(Report? last) => ListView(key: const ValueKey('hold'), padding: const EdgeInsets.fromLTRB(20, 10, 20, 24), children: [
+        Text('Hold the button to call IITG Hospital. Your location and the latest snake report go to the hospital and campus security at the same time.',
+            textAlign: TextAlign.center, style: ft(13.5, color: C.muted, height: 1.5)),
+        const SizedBox(height: 36),
+        Center(
+          child: GestureDetector(
+            onTapDown: (_) => _hold.forward(),
+            onTapUp: (_) => _hold.isCompleted ? null : _hold.reverse(),
+            onTapCancel: () => _hold.isCompleted ? null : _hold.reverse(),
+            child: AnimatedBuilder(
+              animation: _hold,
+              builder: (_, _) => SizedBox(
+                width: 220,
+                height: 220,
+                child: Stack(alignment: Alignment.center, children: [
+                  SizedBox(
+                    width: 220,
+                    height: 220,
+                    child: CircularProgressIndicator(value: _hold.value, strokeWidth: 5, color: Colors.white, backgroundColor: const Color(0x33FF453A)),
+                  ),
+                  Container(
+                    width: 180 - 10 * _hold.value,
+                    height: 180 - 10 * _hold.value,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFFE5382D),
+                      boxShadow: [BoxShadow(color: C.red.withValues(alpha: 0.45), blurRadius: 40, spreadRadius: 4)],
+                    ),
+                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      const Icon(Icons.phone_rounded, color: Colors.white, size: 40),
+                      const SizedBox(height: 6),
+                      Text('SOS', style: ft(26, w: 800, color: Colors.white)),
+                      Text('hold to call', style: ft(12, color: Colors.white.withValues(alpha: 0.8))),
+                    ]),
+                  ),
+                ]),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 36),
+        _Info(Icons.location_on_outlined, last?.where ?? 'Kameng Hostel', 'Location shared automatically'),
+        const SizedBox(height: 10),
+        _Info(Icons.local_hospital_outlined, 'IITG Hospital · 0361 258 2100', '24×7 emergency line'),
+      ]);
+
+  Widget _callingView(Report? last) => ListView(key: const ValueKey('call'), padding: const EdgeInsets.fromLTRB(20, 20, 20, 24), children: [
+        Center(
+          child: Container(
+            width: 110,
+            height: 110,
+            decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFE5382D)),
+            child: const Icon(Icons.phone_in_talk_rounded, color: Colors.white, size: 46),
+          ),
+        ),
+        const SizedBox(height: 18),
+        Text('Calling IITG Hospital', textAlign: TextAlign.center, style: ft(22, w: 700)),
+        const SizedBox(height: 4),
+        Text('Emergency line · connecting…', textAlign: TextAlign.center, style: ft(13, color: C.muted)),
+        const SizedBox(height: 22),
+        for (final t in [
+          'Hospital alerted with your location',
+          'Security control room alerted',
+          if (last != null) 'Last report attached: ${last.title}, ${last.place}',
+        ])
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Panel(
+              color: const Color(0xFF1E1212),
+              border: const Color(0xFF3A1D1B),
+              padding: const EdgeInsets.all(12),
+              child: Row(children: [
+                const Icon(Icons.check_rounded, color: C.green, size: 18),
+                const SizedBox(width: 10),
+                Expanded(child: Text(t, style: ft(13.5))),
+              ]),
+            ),
+          ),
+        const SizedBox(height: 8),
+        Panel(
+          color: const Color(0xFF1E1212),
+          border: const Color(0xFF3A1D1B),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('WHILE YOU WAIT', style: ft(11, w: 700, color: C.amber, ls: 1)),
+            const SizedBox(height: 8),
+            Text(
+              'Keep the person still and calm · Remove rings and tight clothing · Keep the bitten limb below heart level · Do not cut, suck, or apply a tourniquet',
+              style: ft(13, color: C.sub, height: 1.55),
+            ),
+          ]),
+        ),
+        const SizedBox(height: 18),
+        Btn('Call now (opens dialler)', kind: BtnKind.danger, icon: Icons.phone_rounded, onTap: _dial),
+        const SizedBox(height: 10),
+        Btn('End call', kind: BtnKind.ghost, onTap: () {
+          _hold.reset();
+          setState(() => _calling = false);
+        }),
+      ]);
+}
+
+class _Info extends StatelessWidget {
+  final IconData icon;
+  final String title, sub;
+  const _Info(this.icon, this.title, this.sub);
+  @override
+  Widget build(BuildContext context) => Panel(
+        color: const Color(0xFF1E1212),
+        border: const Color(0xFF3A1D1B),
+        child: Row(children: [
+          Icon(icon, color: C.redText, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: ft(14, w: 600)),
+              Text(sub, style: ft(12, color: C.muted)),
+            ]),
+          ),
+        ]),
+      );
+}
