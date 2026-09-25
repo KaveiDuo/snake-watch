@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 
 import '../data/app_state.dart';
+import '../data/kv_buildings.dart';
 import '../theme.dart';
 import 'common.dart';
 
@@ -150,6 +151,24 @@ class CampusMapState extends State<CampusMap> with TickerProviderStateMixin {
                     userAgentPackageName: 'in.iitg.onestop.snake_watch',
                     maxZoom: 19,
                     tileBuilder: widget.dark ? darkModeTileBuilder : null,
+                  ),
+                  // KV buildings aren't in OpenStreetMap yet, so draw them in the
+                  // same style as the map's other buildings.
+                  PolygonLayer(
+                    polygons: [
+                      for (final pts in kvBuildingShapes)
+                        Polygon(
+                          points: pts,
+                          color: widget.dark ? const Color(0xFF3B3835) : const Color(0xFFD9D0C9),
+                          borderColor: widget.dark ? const Color(0xFF4A4541) : const Color(0xFFC4B6AB),
+                          borderStrokeWidth: 1,
+                        ),
+                      for (final pts in kvWaterShapes)
+                        Polygon(
+                          points: pts,
+                          color: widget.dark ? const Color(0xFF1F3440) : const Color(0xFFAAD3DF),
+                        ),
+                    ],
                   ),
                   MarkerLayer(
                     markers: [
