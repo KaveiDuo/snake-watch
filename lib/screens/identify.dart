@@ -1,22 +1,31 @@
 import 'dart:async';
+import 'dart:typed_data';
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:image_picker/image_picker.dart';
 
+import '../data/app_state.dart';
+import '../data/scanner.dart';
 import '../data/species.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 
 class IdentifyResult {
   final String photoPath;
-  final String speciesId;
-  const IdentifyResult(this.photoPath, this.speciesId);
+
+  /// Campus species id, or null when the match isn't one of them.
+  final String? speciesId;
+  final String? name;
+  final Venom venom;
+  const IdentifyResult(this.photoPath, {this.speciesId, this.name, required this.venom});
 }
 
-/// Demo "Identify snake": pick or take a photo, a short scanning animation
-/// plays, then a pretend match is shown. There is no real AI model in this
-/// demo — the sample photos return their own species, your own photos
-/// return Banded Krait.
+/// "Identify snake": pick or take a photo, then Claude matches it against the
+/// campus species. Without a scanner key (Profile → Snake scanner key) a demo
+/// match is shown instead: sample photos return their own species, your own
+/// photos return Banded Krait.
 class IdentifyScreen extends StatefulWidget {
   final bool forReport;
   const IdentifyScreen({super.key, this.forReport = false});
@@ -27,8 +36,13 @@ class IdentifyScreen extends StatefulWidget {
 class _IdentifyScreenState extends State<IdentifyScreen> with SingleTickerProviderStateMixin {
   static const samples = ['banded_krait', 'cobra', 'keelback', 'wolf', 'vine', 'rat', 'king_cobra', 'python', 'black_krait'];
   String? _photo;
-  String _match = 'banded_krait';
+  Uint8List? _bytes;
+  String _demoId = 'banded_krait';
   bool _scanning = false;
+  bool _demo = false;
+  ScanResult? _result;
+  String? _error;
+  int _pick = 0;
   late final AnimationController _scan = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
 
   @override
@@ -37,32 +51,89 @@ class _IdentifyScreenState extends State<IdentifyScreen> with SingleTickerProvid
     super.dispose();
   }
 
-  Future<void> _start(String photo, String match) async {
+  Future<void> _start(String photo, Future<Uint8List> Function() load, String demoId) async {
     setState(() {
       _photo = photo;
-      _match = match;
+      _demoId = demoId;
       _scanning = true;
+      _result = null;
+      _error = null;
+      _pick = 0;
     });
     _scan.repeat(reverse: true, period: const Duration(milliseconds: 900));
-    await Future<void>.delayed(const Duration(milliseconds: 2200));
+    final minWait = Future<void>.delayed(const Duration(milliseconds: 1600));
+    ScanResult? result;
+    String? error;
+    final key = await Scanner.loadKey();
+    _demo = key == null;
+    if (key == null) {
+      result = _demoResult(demoId);
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+    } else {
+      try {
+        _bytes ??= await load();
+        result = await Scanner.identify(_bytes!, key);
+      } on ScanException catch (e) {
+        error = e.message;
+      } catch (_) {
+        error = 'Something went wrong while scanning. Try again.';
+      }
+    }
+    await minWait;
     if (!mounted) return;
     _scan.stop();
-    setState(() => _scanning = false);
+    setState(() {
+      _scanning = false;
+      _result = result;
+      _error = error;
+    });
   }
 
-  Future<void> _pick(ImageSource src) async {
+  ScanResult _demoResult(String id) {
+    final others = ['wolf', 'cobra', 'keelback'].where((x) => x != id).take(2).toList();
+    ScanMatch m(String id, int c) => ScanMatch(speciesId: id, name: speciesById(id).name, venomous: speciesById(id).venomous, confidence: c);
+    return ScanResult(isSnake: true, matches: [m(id, 76), m(others[0], 18), m(others[1], 6)]);
+  }
+
+  Future<void> _pickImage(ImageSource src) async {
     final x = await ImagePicker().pickImage(source: src, maxWidth: 1600, imageQuality: 85);
-    if (x != null) _start(x.path, 'banded_krait');
+    if (x == null) return;
+    _bytes = null;
+    _start(x.path, x.readAsBytes, 'banded_krait');
   }
 
-  Widget _image(String path, {BoxFit fit = BoxFit.cover}) => photoOf(path, fit: fit);
+  void _useSample(String id) {
+    final path = speciesById(id).photo;
+    _bytes = null;
+    _start(path, () async => (await rootBundle.load(path)).buffer.asUint8List(), id);
+  }
+
+  void _retake() => setState(() {
+    _photo = null;
+    _bytes = null;
+    _result = null;
+    _error = null;
+  });
+
+  /// The whole photo, never cropped, on a blurred copy of itself.
+  Widget _photoBox(String path) => Stack(
+    fit: StackFit.expand,
+    children: [
+      ImageFiltered(
+        imageFilter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: photoOf(path, fit: BoxFit.cover),
+      ),
+      Container(color: Colors.black.withValues(alpha: 0.3)),
+      photoOf(path, fit: BoxFit.contain),
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
     final title = _photo == null ? 'Choose a photo' : 'Identify snake';
     return DarkPage(
       header: AppHeader(title, backIcon: Icons.close_rounded),
-      body: _photo == null ? _chooser() : (_scanning ? _scanner() : _result()),
+      body: _photo == null ? _chooser() : (_scanning ? _scanner() : _resultView()),
     );
   }
 
@@ -72,7 +143,7 @@ class _IdentifyScreenState extends State<IdentifyScreen> with SingleTickerProvid
       Row(
         children: [
           Expanded(
-            child: Btn('Take a photo', icon: Icons.photo_camera_outlined, height: 48, onTap: () => _pick(ImageSource.camera)),
+            child: Btn('Take a photo', icon: Icons.photo_camera_outlined, height: 48, onTap: () => _pickImage(ImageSource.camera)),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -81,7 +152,7 @@ class _IdentifyScreenState extends State<IdentifyScreen> with SingleTickerProvid
               kind: BtnKind.ghost,
               icon: Icons.photo_library_outlined,
               height: 48,
-              onTap: () => _pick(ImageSource.gallery),
+              onTap: () => _pickImage(ImageSource.gallery),
             ),
           ),
         ],
@@ -98,7 +169,7 @@ class _IdentifyScreenState extends State<IdentifyScreen> with SingleTickerProvid
         children: [
           for (final id in samples)
             GestureDetector(
-              onTap: () => _start(speciesById(id).photo, id),
+              onTap: () => _useSample(id),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.asset(speciesById(id).photo, fit: BoxFit.cover),
@@ -111,6 +182,18 @@ class _IdentifyScreenState extends State<IdentifyScreen> with SingleTickerProvid
         'Pick a clear photo of the whole snake for the best match. Keep 3 m back — zoom in instead.',
         style: ft(12.5, color: C.muted, height: 1.5),
       ),
+      const SizedBox(height: 10),
+      FutureBuilder<String?>(
+        future: Scanner.loadKey(),
+        builder: (context, snap) => snap.connectionState != ConnectionState.done
+            ? const SizedBox.shrink()
+            : Text(
+                snap.data == null
+                    ? 'Demo mode: add a scanner key in Profile → Snake scanner key to identify photos for real.'
+                    : 'Photos are identified by Claude AI.',
+                style: ft(12, color: snap.data == null ? C.amber : C.greenText, height: 1.5),
+              ),
+      ),
     ],
   );
 
@@ -121,8 +204,7 @@ class _IdentifyScreenState extends State<IdentifyScreen> with SingleTickerProvid
       child: Stack(
         fit: StackFit.expand,
         children: [
-          _image(_photo!),
-          Container(color: Colors.black.withValues(alpha: 0.2)),
+          _photoBox(_photo!),
           AnimatedBuilder(
             animation: _scan,
             builder: (context, _) => Align(
@@ -144,7 +226,7 @@ class _IdentifyScreenState extends State<IdentifyScreen> with SingleTickerProvid
             child: Text(
               'Matching against campus species…',
               textAlign: TextAlign.center,
-              style: ft(13.5, w: 600, color: Colors.white),
+              style: ft(13.5, w: 600, color: Colors.white).copyWith(shadows: const [Shadow(blurRadius: 8)]),
             ),
           ),
         ],
@@ -152,104 +234,175 @@ class _IdentifyScreenState extends State<IdentifyScreen> with SingleTickerProvid
     ),
   );
 
-  Widget _result() {
-    final sp = speciesById(_match);
-    final others = species.where((x) => x.id != sp.id && (x.id == 'wolf' || x.id == 'cobra' || x.id == 'keelback')).take(2).toList();
+  Widget _resultView() {
+    final r = _result;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(22),
-          child: AspectRatio(aspectRatio: 1.1, child: _image(_photo!)),
+          child: AspectRatio(aspectRatio: 1.1, child: _photoBox(_photo!)),
         ),
         const SizedBox(height: 12),
-        Panel(
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(width: 64, height: 64, child: Image.asset(sp.photo, fit: BoxFit.cover)),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Tag(
-                      sp.venomous ? 'VENOMOUS' : 'NON-VENOMOUS',
-                      fg: sp.venomous ? C.redText : C.greenText,
-                      bg: sp.venomous ? C.redSoft : C.greenSoft,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(sp.name, style: ft(17, w: 700)),
-                    Text(
-                      sp.latin,
-                      style: ft(12, color: C.muted).copyWith(fontStyle: FontStyle.italic),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(3),
-                            child: const LinearProgressIndicator(
-                              value: 0.76,
-                              minHeight: 5,
-                              color: C.green,
-                              backgroundColor: Color(0xFF2A2A2A),
-                            ),
+        if (_error != null) ...[
+          Panel(
+            border: const Color(0xFF5A2424),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.error_outline_rounded, color: C.redText),
+                const SizedBox(width: 12),
+                Expanded(child: Text(_error!, style: ft(14, height: 1.4))),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          Btn('Try again', onTap: () => _start(_photo!, () async => _bytes!, _demoId)),
+        ] else if (r != null && !r.isSnake) ...[
+          Panel(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('No snake found', style: ft(17, w: 700)),
+                const SizedBox(height: 4),
+                Text(r.note ?? 'The scanner couldn’t see a snake in this photo.', style: ft(13, color: C.muted, height: 1.4)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (widget.forReport)
+            Btn(
+              'Use photo anyway',
+              kind: BtnKind.ghost,
+              onTap: () => Navigator.pop(context, IdentifyResult(_photo!, venom: Venom.unsure)),
+            ),
+        ] else if (r != null)
+          ..._matches(r),
+        const SizedBox(height: 8),
+        Btn('Retake photo', kind: BtnKind.ghost, onTap: _retake),
+      ],
+    );
+  }
+
+  List<Widget> _matches(ScanResult r) {
+    final top = r.matches[_pick.clamp(0, r.matches.length - 1)];
+    final others = [for (final (i, m) in r.matches.indexed) if (i != _pick) (i, m)];
+    return [
+      Panel(
+        child: Row(
+          children: [
+            _thumb(top, 64),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _venomTag(top.venomous),
+                  const SizedBox(height: 6),
+                  Text(top.name, style: ft(17, w: 700)),
+                  if (top.latin != null) Text(top.latin!, style: ft(12, color: C.muted).copyWith(fontStyle: FontStyle.italic)),
+                  if (top.sp == null) Text('Not one of the campus species', style: ft(12, color: C.amber)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(3),
+                          child: LinearProgressIndicator(
+                            value: top.confidence / 100,
+                            minHeight: 5,
+                            color: C.green,
+                            backgroundColor: const Color(0xFF2A2A2A),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        Text('76%', style: ft(13, w: 700, color: C.green)),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text('${top.confidence}%', style: ft(13, w: 700, color: C.green)),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-        const SizedBox(height: 10),
-        Text(
-          'Demo match, not a diagnosis. If it doesn’t look right, pick an alternative or report as Not sure.',
-          style: ft(12, color: C.muted, height: 1.4),
-        ),
+      ),
+      const SizedBox(height: 10),
+      if (r.note != null && r.note!.isNotEmpty) ...[
+        Text(r.note!, style: ft(12.5, color: C.sub, height: 1.4)),
+        const SizedBox(height: 6),
+      ],
+      Text(
+        _demo
+            ? 'Demo match, not a real scan. Add a scanner key in Profile → Snake scanner key to identify photos for real.'
+            : 'AI match, not a diagnosis. Keep your distance and treat any snake you’re unsure of as venomous.',
+        style: ft(12, color: _demo ? C.amber : C.muted, height: 1.4),
+      ),
+      if (others.isNotEmpty) ...[
         const SizedBox(height: 16),
         Text('OTHER POSSIBLE MATCHES', style: ft(11.5, w: 700, color: C.muted, ls: 1.2)),
         const SizedBox(height: 8),
-        for (final (i, o) in others.indexed)
+        for (final (i, o) in others)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Panel(
               padding: const EdgeInsets.all(10),
-              onTap: () => setState(() => _match = o.id),
+              onTap: () => setState(() => _pick = i),
               child: Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: SizedBox(width: 44, height: 44, child: Image.asset(o.photo, fit: BoxFit.cover)),
-                  ),
+                  _thumb(o, 44),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(o.name, style: ft(14.5, w: 600)),
-                        Text(o.venomous ? 'Venomous' : 'Non-venomous', style: ft(12, color: C.muted)),
+                        Text(
+                          o.venomous == null ? 'Venom unknown' : (o.venomous! ? 'Venomous' : 'Non-venomous'),
+                          style: ft(12, color: C.muted),
+                        ),
                       ],
                     ),
                   ),
-                  Text(i == 0 ? '18%' : '6%', style: ft(13, color: C.muted)),
+                  Text('${o.confidence}%', style: ft(13, color: C.muted)),
                 ],
               ),
             ),
           ),
-        const SizedBox(height: 10),
-        if (widget.forReport) Btn('Use this in my report', onTap: () => Navigator.pop(context, IdentifyResult(_photo!, _match))),
-        const SizedBox(height: 8),
-        Btn('Retake photo', kind: BtnKind.ghost, onTap: () => setState(() => _photo = null)),
       ],
-    );
+      const SizedBox(height: 10),
+      if (widget.forReport)
+        Btn(
+          'Use this in my report',
+          onTap: () => Navigator.pop(
+            context,
+            IdentifyResult(
+              _photo!,
+              speciesId: top.speciesId,
+              name: top.name,
+              venom: top.venomous == null ? Venom.unsure : (top.venomous! ? Venom.venomous : Venom.nonVenomous),
+            ),
+          ),
+        ),
+    ];
   }
+
+  Widget _venomTag(bool? venomous) => switch (venomous) {
+    true => const Tag('VENOMOUS', fg: C.redText, bg: C.redSoft),
+    false => const Tag('NON-VENOMOUS', fg: C.greenText, bg: C.greenSoft),
+    null => const Tag('NOT SURE', fg: Color(0xFFFFC46B), bg: Color(0xFF2A1E0B)),
+  };
+
+  Widget _thumb(ScanMatch m, double size) => ClipRRect(
+    borderRadius: BorderRadius.circular(size > 50 ? 12 : 10),
+    child: SizedBox(
+      width: size,
+      height: size,
+      child: m.sp != null
+          ? Image.asset(m.sp!.photo, fit: BoxFit.cover)
+          : Container(
+              color: const Color(0xFF2A2A2A),
+              child: Icon(Icons.help_outline_rounded, color: C.muted, size: size * 0.45),
+            ),
+    ),
+  );
 }

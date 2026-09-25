@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/app_state.dart';
+import '../data/scanner.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import 'sign_in.dart';
@@ -120,6 +121,69 @@ class InfoCard extends StatelessWidget {
   );
 }
 
+/// Lets the user paste their own Anthropic API key so the snake scanner can
+/// identify photos for real. The key is saved only on this device.
+Future<void> showScannerKeyDialog(BuildContext context) async {
+  final current = await Scanner.loadKey();
+  if (!context.mounted) return;
+  final ctrl = TextEditingController(text: current ?? '');
+  final saved = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: C.card,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Text('Snake scanner key', style: ft(18, w: 700)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Paste an Anthropic API key (it starts with sk-ant-) to identify snake photos with Claude AI. '
+            'It is saved only on this device. Each scan uses a little credit on that Anthropic account.',
+            style: ft(13, color: C.sub, height: 1.45),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: ctrl,
+            obscureText: true,
+            autocorrect: false,
+            enableSuggestions: false,
+            style: ft(14),
+            decoration: InputDecoration(
+              hintText: 'sk-ant-…',
+              hintStyle: ft(14, color: C.muted),
+              filled: true,
+              fillColor: C.card2,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            current == null ? 'No key yet: the scanner shows demo matches.' : 'A key is saved: the scanner is live.',
+            style: ft(12, color: current == null ? C.amber : C.greenText),
+          ),
+        ],
+      ),
+      actions: [
+        if (current != null)
+          TextButton(
+            onPressed: () {
+              ctrl.clear();
+              Navigator.pop(ctx, true);
+            },
+            child: Text('Remove', style: ft(14, w: 600, color: C.redText)),
+          ),
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: ft(14, color: C.sub))),
+        TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('Save', style: ft(14, w: 700, color: C.green))),
+      ],
+    ),
+  );
+  if (saved != true) return;
+  final key = ctrl.text.trim();
+  await Scanner.saveKey(key);
+  if (context.mounted) toast(context, key.isEmpty ? 'Scanner key removed: demo matches only' : 'Scanner key saved: the scanner is live');
+}
+
 class ProfileActions extends StatelessWidget {
   const ProfileActions({super.key});
   @override
@@ -151,6 +215,7 @@ class ProfileActions extends StatelessWidget {
     );
     return Column(
       children: [
+        b(Icons.document_scanner_outlined, 'Snake scanner key', () => showScannerKeyDialog(context)),
         b(
           Icons.info_outline_rounded,
           'About Us',

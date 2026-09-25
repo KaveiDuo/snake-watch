@@ -185,6 +185,9 @@ class Draft {
   String? speciesId;
   String? photoPath;
   String? matchedId;
+
+  /// Name the scanner gave, when it isn't one of the campus species.
+  String? matchedName;
   bool exactSpotSet = false;
   String note = '';
 }
@@ -388,12 +391,16 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setPhoto(String? path, {String? matchedId}) {
+  void setPhoto(String? path, {String? matchedId, String? matchedName, Venom? venom}) {
     draft.photoPath = path;
     draft.matchedId = matchedId;
+    draft.matchedName = matchedId == null ? matchedName : null;
     if (matchedId != null) {
       draft.speciesId = matchedId;
       draft.venom = speciesById(matchedId).venomous ? Venom.venomous : Venom.nonVenomous;
+    } else if (venom != null) {
+      draft.speciesId = null;
+      draft.venom = venom;
     }
     notifyListeners();
   }

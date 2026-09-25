@@ -174,7 +174,7 @@ class _ReportScreenState extends State<ReportScreen> {
                   Text('Helps the authority prepare. Skip it if you are not sure.', style: ft(13, color: C.muted)),
                   const SizedBox(height: 14),
                   if (d.photoPath != null)
-                    _PhotoAttached(path: d.photoPath!, matchedId: d.matchedId, onRemove: () => s.setPhoto(null))
+                    _PhotoAttached(path: d.photoPath!, matchedId: d.matchedId, matchedName: d.matchedName, onRemove: () => s.setPhoto(null))
                   else
                     Row(
                       children: [
@@ -184,7 +184,7 @@ class _ReportScreenState extends State<ReportScreen> {
                               context,
                               MaterialPageRoute(builder: (_) => const IdentifyScreen(forReport: true)),
                             );
-                            if (res != null) s.setPhoto(res.photoPath, matchedId: res.speciesId);
+                            if (res != null) s.setPhoto(res.photoPath, matchedId: res.speciesId, matchedName: res.name, venom: res.venom);
                           }),
                         ),
                         const SizedBox(width: 10),
@@ -434,8 +434,9 @@ class _SmallAction extends StatelessWidget {
 class _PhotoAttached extends StatelessWidget {
   final String path;
   final String? matchedId;
+  final String? matchedName;
   final VoidCallback onRemove;
-  const _PhotoAttached({required this.path, required this.matchedId, required this.onRemove});
+  const _PhotoAttached({required this.path, required this.matchedId, this.matchedName, required this.onRemove});
   @override
   Widget build(BuildContext context) {
     return Panel(
@@ -454,6 +455,7 @@ class _PhotoAttached extends StatelessWidget {
               children: [
                 Text('Photo attached', style: ft(14.5, w: 600)),
                 if (matchedId != null) Text('Matched ${speciesById(matchedId!).name}', style: ft(12.5, color: C.green)),
+                if (matchedId == null && matchedName != null) Text('Scanner: $matchedName (not a campus species)', style: ft(12.5, color: C.amber)),
               ],
             ),
           ),

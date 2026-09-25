@@ -5,7 +5,9 @@ A standalone demo of the **Snake Watch** add-on for IIT Guwahati's Onestop app: 
 - **Open it in your browser:** https://kaveiduo.github.io/snake-watch/
 - **Android app (APK):** https://github.com/KaveiDuo/snake-watch/releases/latest/download/SnakeWatch.apk
 
-This is a design demo built from the Figma prototype. It uses example data only: reports stay on your own device and reset when the app restarts, the snake scanner result is simulated, and there is no real sign-in.
+This is a design demo built from the Figma prototype. It uses example data only: reports stay on your own device and reset when the app restarts, and there is no real sign-in.
+
+**Snake scanner:** it identifies photos with Claude AI (model `claude-sonnet-5`) once you paste an Anthropic API key in **Profile → Snake scanner key**. The key is saved only on that device and is never part of the app or this repository. Without a key the scanner shows a demo match.
 
 ## Build
 
