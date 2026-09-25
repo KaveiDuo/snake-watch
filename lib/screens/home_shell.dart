@@ -5,7 +5,6 @@ import '../theme.dart';
 import '../widgets/common.dart';
 import 'notifications.dart';
 import 'profile.dart';
-import 'snake_guide.dart';
 import 'snake_watch.dart';
 import 'sos.dart';
 
@@ -294,7 +293,6 @@ class _HomeTab extends StatelessWidget {
             children: [
               for (final (emoji, label) in [
                 ('🐍', 'Snake Watch'),
-                ('📖', 'Snake Guide'),
                 ('🚪', 'GateLog'),
                 ('🪙', 'Library Token'),
                 ('👤', 'Contacts'),
@@ -311,8 +309,6 @@ class _HomeTab extends StatelessWidget {
                   onTap: () {
                     if (label == 'Snake Watch') {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const SnakeWatchScreen()));
-                    } else if (label == 'Snake Guide') {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SnakeGuideScreen()));
                     } else {
                       _soon(context, label);
                     }

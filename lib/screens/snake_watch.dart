@@ -6,7 +6,6 @@ import '../widgets/campus_map.dart';
 import '../widgets/common.dart';
 import 'report.dart';
 import 'sighting_detail.dart';
-import 'snake_guide.dart';
 
 /// Campus map. Tapping the map only drops a pin (tap again to move it); the
 /// report starts when you press "Report here".
@@ -34,10 +33,6 @@ class _SnakeWatchScreenState extends State<SnakeWatchScreen> {
       header: AppHeader(
         'Snake Watch',
         subtitle: s.activeCount == 1 ? '1 active report on campus' : '${s.activeCount} active reports on campus',
-        trailing: RoundButton(
-          Icons.menu_book_outlined,
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SnakeGuideScreen())),
-        ),
       ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),

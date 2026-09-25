@@ -17,4 +17,4 @@ flutter build web --release --base-href /snake-watch/app/
 
 On the original Windows PC use `build_apk.ps1`, which works around a Java temp-folder issue.
 
-Snake photos: Wikimedia Commons (credits in the in-app Snake Guide). Map © OpenStreetMap contributors.
+Snake photos: Wikimedia Commons. Map © OpenStreetMap contributors.
