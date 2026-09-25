@@ -14,15 +14,17 @@ import 'common.dart';
 class LocationPin extends StatelessWidget {
   final Color color;
   final double width;
-  const LocationPin({super.key, required this.color, this.width = 26});
+  final bool shadow;
+  const LocationPin({super.key, required this.color, this.width = 26, this.shadow = true});
 
   @override
-  Widget build(BuildContext context) => CustomPaint(size: Size(width, width * 1.3), painter: _PinPainter(color));
+  Widget build(BuildContext context) => CustomPaint(size: Size(width, width * 1.3), painter: _PinPainter(color, shadow));
 }
 
 class _PinPainter extends CustomPainter {
   final Color color;
-  _PinPainter(this.color);
+  final bool shadow;
+  _PinPainter(this.color, this.shadow);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -33,7 +35,7 @@ class _PinPainter extends CustomPainter {
       ..arcToPoint(Offset(w, r), radius: Radius.circular(r))
       ..cubicTo(w, h * 0.62, w * 0.64, h * 0.8, w / 2, h)
       ..close();
-    canvas.drawShadow(path, Colors.black, 3, false);
+    if (shadow) canvas.drawShadow(path, Colors.black, 3, false);
     canvas.drawPath(path, Paint()..color = color);
     canvas.drawPath(
       path,
@@ -46,7 +48,7 @@ class _PinPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _PinPainter old) => old.color != color;
+  bool shouldRepaint(covariant _PinPainter old) => old.color != color || old.shadow != shadow;
 }
 
 /// Small name labels for the quarters and KV buildings we draw ourselves

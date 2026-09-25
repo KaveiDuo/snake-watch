@@ -220,7 +220,7 @@ class _Legend extends StatelessWidget {
                           height: 8,
                           decoration: BoxDecoration(color: c, shape: BoxShape.circle),
                         )
-                      : LocationPin(color: c, width: 9),
+                      : LocationPin(color: c, width: 9, shadow: false),
                   const SizedBox(width: 4),
                   Text(l, style: ft(10.5, color: dark ? C.text : const Color(0xFF222222))),
                 ],
