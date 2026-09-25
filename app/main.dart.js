@@ -102287,7 +102287,7 @@ A.jw.prototype={
 geE(){var s=this.b
 s=s==null?null:A.mc(s)
 s=s==null?null:s.b
-if(s==null)s=this.c===B.dp?"Harmless snake":"Unidentified snake"
+if(s==null)s=this.c===B.dp?"Non-venomous snake":"Unidentified snake"
 return s},
 gOT(a){var s=this.e,r=this.d
 return s.length===0?r:r+" \xb7 "+s}}
@@ -102694,7 +102694,7 @@ q=a.gn2().length>0?""+a.gn2().length+" ACTIVE":"ALL CLEAR"
 s=A.c([A.be(A.c([B.bLg,B.cq,s,r,A.U(q,d,d,d,d,A.ae(12.5,a.gn2().length>0?B.c0:B.v,d,0.6,700),d,d),B.fc,B.mJ],a1),B.p,B.l,B.m),B.bg],a1)
 if(a0!=null){r=a0.c
 if(r!==B.dp)r=r===B.e8?"Venomous snake":"Snake"
-else r="Harmless snake"
+else r="Non-venomous snake"
 q=a0.d
 r=A.U(r+" near "+A.md(q," Hostel",""),d,d,d,d,A.ae(17,B.z,d,d,400),d,d)
 p=a0.e
@@ -102937,7 +102937,7 @@ m=p.d
 o=(o.length===0?m:m+" \xb7 "+o)+" has been checked and marked safe. Safe to pass."}else{o=p.b
 o=o==null?e:A.mc(o)
 o=o==null?e:o.b
-if(o==null)o=p.c===B.dp?"Harmless snake":"Unidentified snake"
+if(o==null)o=p.c===B.dp?"Non-venomous snake":"Unidentified snake"
 m=p.e
 l=p.d
 m=m.length===0?l:l+" \xb7 "+m
@@ -103621,7 +103621,7 @@ case 2:if(q.c!=null)q.ae(new A.aHX(q))
 return A.N(null,r)}})
 return A.O($async$wg,r)},
 E(a){var s=this,r=null,q=a.al(t.T).f,p=s.d,o=A.aNb("Snake Watch",B.dM,q.gn2().length===1?"1 active report on campus":""+q.gn2().length+" active reports on campus"),n=q.b,m=q.gn2(),l=p==null,k=l?r:p.d,j=l?"Tap the map to drop a pin where you saw a snake":"Tap again to move the pin",i=q.b,h=t.p
-i=A.c([A.cd(A.e9(B.b2,A.c([A.Ul(0,A.aRV(B.RF,n,new A.aI0(s,q),new A.aI1(a),q.ga5c(),m,k,new A.a06(j,i,r))),A.ib(10,new A.a0J(i,r),r,r,10,60,r,r)],h),B.I,B.aI,r),1),B.bf],h)
+i=A.c([A.cd(A.e9(B.b2,A.c([A.Ul(0,A.aRV(B.RF,n,new A.aI0(s,q),new A.aI1(a),q.ga5c(),m,k,new A.a06(j,i,r))),A.ib(10,new A.a0J(i,r),r,r,10,10,r,r)],h),B.I,B.aI,r),1),B.bf],h)
 if(!l)i.push(new A.a1N(p,new A.aI2(s,p),new A.aI3(s),r))
 else i.push(A.dJ(!1,B.K,!0,A.bP(20),A.hb(!1,A.bP(20),!0,new A.b0(B.S5,A.be(A.c([B.TR,B.e0,A.cd(A.br(A.c([A.U("Report a sighting",r,r,r,r,A.ae(17,B.j,r,r,600),r,r),A.U("Uses your current location \xb7 you can change it",r,r,r,r,A.ae(12.5,B.j.dJ(0.85),r,r,400),r,r)],h),B.R,B.l,B.m),1),B.TJ],h),B.p,B.l,B.m),r),r,!0,r,r,r,r,r,r,r,r,r,new A.aI4(s),r,r,r,r,r,r,r),B.n,B.cA,0,r,r,r,r,r,B.aH))
 return A.ji(new A.b0(B.RR,A.br(i,B.p,B.l,B.m),r),o)}}
@@ -103682,7 +103682,7 @@ o=q.b
 q=p==="You"?A.bQ(l,l,B.n,l,l,new A.bp(o,l,l,l,l,l,B.aA),l,8,l,l,l,l,8):new A.xz(o,9,l)
 n=j?B.z:B.d9
 m=A.c([new A.cE("wght",400)],s)
-e.push(A.be(A.c([q,B.bF5,A.U(p,l,l,l,l,new A.q(!0,n,l,"Figtree",l,l,11,B.q,l,l,l,l,l,l,l,l,l,l,l,l,l,l,l,l,m,l),l,l)],f),B.p,B.l,B.bv))}return new A.dY(B.pi,l,l,A.bQ(l,A.aW5(e,4,9),B.n,l,l,new A.bp(i,l,g,h,l,l,B.X),l,l,l,B.RH,l,l,l),l)}}
+e.push(A.be(A.c([q,B.bF5,A.U(p,l,l,l,l,new A.q(!0,n,l,"Figtree",l,l,10.5,B.q,l,l,l,l,l,l,l,l,l,l,l,l,l,l,l,l,m,l),l,l)],f),B.p,B.l,B.bv))}return new A.dY(B.pi,l,l,A.bQ(l,A.aW5(e,4,7),B.n,l,l,new A.bp(i,l,g,h,l,l,B.X),l,l,l,B.RH,l,l,l),l)}}
 A.uy.prototype={
 ac(){return new A.Mz(null,null)}}
 A.Mz.prototype={
@@ -119840,7 +119840,7 @@ B.bBo=new A.S("Academic SSO","https://online.iitg.ac.in/sso")
 B.bBw=new A.S("Venomous",B.qv)
 B.bBx=new A.S("Placement Stats",null)
 B.bBz=new A.S("gc.svg","GC Score Board")
-B.bBC=new A.S("Harmless",B.r1)
+B.bBC=new A.S("Non-venomous",B.r1)
 B.bBH=new A.S("QuickLink",null)
 B.bBJ=new A.S(B.G,0)
 B.bBK=new A.S("LAN.svg","LAN")
@@ -120737,7 +120737,7 @@ B.IY=new A.q6(B.f,0,B.F,B.f)
 B.oU=new A.q6(B.f,1,B.F,B.f)
 B.ct=new A.hJ(B.f)
 B.e8=new A.IH(0,"venomous")
-B.dp=new A.IH(1,"harmless")
+B.dp=new A.IH(1,"nonVenomous")
 B.hR=new A.IH(2,"unsure")
 B.IZ=new A.avw(0,"triangles")
 B.cZ=new A.avy(1,"down")
