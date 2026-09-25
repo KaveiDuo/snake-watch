@@ -303,6 +303,7 @@ class _HomeTab extends StatelessWidget {
                 ('🛍', 'Buy and Sell'),
                 ('🏆', 'GC Score Board'),
                 ('🏥', 'Medical Section'),
+                ('🌐', 'LAN'),
               ])
                 InkWell(
                   borderRadius: BorderRadius.circular(14),
