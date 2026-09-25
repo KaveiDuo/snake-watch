@@ -103641,7 +103641,7 @@ this.aci()},
 zM(){var s=0,r=A.P(t.H),q=this,p
 var $async$zM=A.Q(function(a,b){if(a===1)return A.M(b,r)
 for(;;)switch(s){case 0:s=2
-return A.K(A.aQj(A.hI("tel:03612582100",0,null)),$async$zM)
+return A.K(A.aQj(A.hI("tel:8277992838",0,null)),$async$zM)
 case 2:if(!b&&q.c!=null){p=q.c
 p.toString
 A.mc(p,"Could not open the dialler")}return A.N(null,r)}})
@@ -103649,7 +103649,7 @@ return A.O($async$zM,r)},
 E(a){var s=null,r=a.al(t.T).f.ga3i(),q=A.aN5("Emergency SOS",B.h9,s)
 return A.ud(s,B.OR,A.nr(!0,A.br(A.c([q,A.cd(A.a8D(this.e?this.aeb(r):this.alQ(r),B.iJ,A.a7I(),B.a2,A.aQ0()),1)],t.p),B.p,B.l,B.m),B.ah,!0),s,s,s)},
 alQ(a){var s=this,r=null,q=A.V("Hold the button to call IITG Hospital. Your location and the latest snake report go to the hospital and campus security at the same time.",r,r,r,r,A.af(13.5,B.C,1.5,r,400),B.an,r),p=A.eQ(A.i_(r,A.fJ(s.gpx(),new A.aI2(s),r),B.a9,!1,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,new A.aI3(s),new A.aI4(s),new A.aI5(s),r,r,r),r,r),o=a==null?r:a.gOS(0)
-return A.hc(A.c([q,B.I1,p,B.I1,new A.Ko(B.eF,o==null?"Kameng Hostel":o,"Location shared automatically",r),B.bL,new A.Ko(B.T5,"IITG Hospital \xb7 0361 258 2100","24\xd77 emergency line",r)],t.p),r,B.bMp,B.S5,r,B.V)},
+return A.hc(A.c([q,B.I1,p,B.I1,new A.Ko(B.eF,o==null?"Kameng Hostel":o,"Location shared automatically",r),B.bL,new A.Ko(B.T5,"IITG Hospital \xb7 82779 92838","24\xd77 emergency line",r)],t.p),r,B.bMp,B.S5,r,B.V)},
 aeb(a){var s,r,q,p,o,n=null,m=t.p,l=A.c([A.eQ(A.bQ(n,B.TO,B.n,n,n,B.KL,n,110,n,n,n,n,110),n,n),B.dh,A.V("Calling IITG Hospital",n,n,n,n,A.af(22,B.z,n,n,700),B.an,n),B.di,A.V("Emergency line \xb7 connecting\u2026",n,n,n,n,A.af(13,B.C,n,n,400),B.an,n),B.cq],m),k=A.c(["Hospital alerted with your location","Security control room alerted"],t.s)
 if(a!=null)k.push("Last report attached: "+a.geE()+", "+a.d)
 s=k.length
