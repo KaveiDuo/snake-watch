@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -56,8 +55,7 @@ class _IdentifyScreenState extends State<IdentifyScreen> with SingleTickerProvid
     if (x != null) _start(x.path, 'banded_krait');
   }
 
-  Widget _image(String path, {BoxFit fit = BoxFit.cover}) =>
-      path.startsWith('assets/') ? Image.asset(path, fit: fit) : Image.file(File(path), fit: fit);
+  Widget _image(String path, {BoxFit fit = BoxFit.cover}) => photoOf(path, fit: fit);
 
   @override
   Widget build(BuildContext context) {

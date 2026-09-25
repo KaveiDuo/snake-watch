@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -60,7 +59,7 @@ class _ReportScreenState extends State<ReportScreen> {
     if (s.draft.loc == null) {
       // Simulated GPS fix.
       _finding = Timer(const Duration(milliseconds: 1300), () {
-        if (mounted && s.draft.loc == null) s.setDraftLoc(detectedLoc);
+        if (mounted && s.draft.loc == null) s.setDraftLoc(s.currentLoc);
       });
     }
   }
@@ -351,14 +350,13 @@ class _PhotoAttached extends StatelessWidget {
   const _PhotoAttached({required this.path, required this.matchedId, required this.onRemove});
   @override
   Widget build(BuildContext context) {
-    final isAsset = path.startsWith('assets/');
     return Panel(
       padding: const EdgeInsets.fromLTRB(10, 10, 6, 10),
       border: const Color(0xFF245A36),
       child: Row(children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(10),
-          child: SizedBox(width: 52, height: 52, child: isAsset ? Image.asset(path, fit: BoxFit.cover) : Image.file(File(path), fit: BoxFit.cover)),
+          child: SizedBox(width: 52, height: 52, child: photoOf(path)),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -478,7 +476,7 @@ class _LocationSheetState extends State<LocationSheet> {
           ),
           const SizedBox(height: 12),
           if (q.isEmpty) ...[
-            _SheetAction(Icons.my_location_rounded, 'Use my current location', () => Navigator.pop(context, detectedLoc)),
+            _SheetAction(Icons.my_location_rounded, 'Use my current location', () => Navigator.pop(context, s.currentLoc)),
             const SizedBox(height: 10),
             _SheetAction(Icons.map_outlined, 'Pick the exact spot on the map', () async {
               final loc = await Navigator.push<Loc>(context, MaterialPageRoute(builder: (_) => PickOnMapScreen(start: s.draft.loc)));
@@ -546,7 +544,7 @@ class PickOnMapScreen extends StatefulWidget {
 }
 
 class _PickOnMapScreenState extends State<PickOnMapScreen> {
-  late Loc _loc = widget.start ?? detectedLoc;
+  late Loc _loc = widget.start ?? AppScope.read(context).currentLoc;
 
   @override
   Widget build(BuildContext context) {

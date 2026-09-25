@@ -1,18 +1,56 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_map/flutter_map.dart' show LatLngBounds;
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 
+import 'hostels.dart';
 import 'places.dart';
 import 'species.dart';
 
-/// Map coordinates are in "map pixels" of the 398 × 760 campus map
-/// (assets/images/pick_map_*.png is exported at 2×).
-const mapSize = Size(398, 760);
-const youAreHere = Offset(282, 388);
+/// IIT Guwahati campus (real coordinates, from OpenStreetMap).
+const campusCenter = LatLng(26.1895, 91.6965);
+final campusBounds = LatLngBounds(const LatLng(26.1780, 91.6820), const LatLng(26.2010, 91.7070));
 
-/// Demo geofence: only Kameng Hostel's boundary is drawn. Taps inside it are
-/// covered by the Kameng hostel authority; anywhere else counts as an open area.
-const kamengZone = Rect.fromLTRB(284, 364, 340, 432);
+/// Where "You" is shown when GPS is off, denied, or you're not on campus.
+const demoYou = LatLng(26.19018, 91.70098); // beside Kameng Hostel
+
+/// A spot counts as inside a hostel if it is in the building outline or
+/// within this many metres of it (courtyards, paths, parking).
+const hostelMarginMetres = 20.0;
+
+const _dist = Distance();
+
+bool _inPolygon(LatLng p, List<LatLng> poly) {
+  var inside = false;
+  for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    final a = poly[i], b = poly[j];
+    if ((a.latitude > p.latitude) != (b.latitude > p.latitude) &&
+        p.longitude < (b.longitude - a.longitude) * (p.latitude - a.latitude) / (b.latitude - a.latitude) + a.longitude) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+double _distToPolygon(LatLng p, List<LatLng> poly) =>
+    poly.map((v) => _dist.as(LengthUnit.Meter, p, v)).reduce(min);
+
+/// Hostel whose premises contain [p], or null for an open area.
+String? hostelAt(LatLng p) {
+  for (final e in hostelOutlines.entries) {
+    if (_inPolygon(p, e.value) || _distToPolygon(p, e.value) <= hostelMarginMetres) return e.key;
+  }
+  return null;
+}
+
+LatLng hostelCentre(String name) {
+  final pts = hostelOutlines[name]!;
+  return LatLng(pts.map((p) => p.latitude).reduce((a, b) => a + b) / pts.length,
+      pts.map((p) => p.longitude).reduce((a, b) => a + b) / pts.length);
+}
 
 enum Venom { venomous, harmless, unsure }
 
@@ -22,12 +60,10 @@ class Loc {
   final String name;
   final String source;
   final bool covered;
-  final Offset pos;
-  const Loc(this.name, this.source, {required this.covered, this.pos = youAreHere});
+  final LatLng pos;
+  const Loc(this.name, this.source, {required this.covered, this.pos = demoYou});
   String get authority => '$name authority';
 }
-
-const detectedLoc = Loc('Kameng Hostel', 'Detected from your location', covered: true, pos: Offset(307, 392));
 
 class Report {
   final String id;
@@ -38,7 +74,7 @@ class Report {
   final String note;
   final String reporter;
   final DateTime time;
-  final Offset pos;
+  final LatLng pos;
   final bool covered;
   final String? photoPath;
   bool safe;
@@ -82,6 +118,8 @@ class Draft {
   String note = '';
 }
 
+enum GpsState { off, searching, onCampus, offCampus, denied }
+
 class AppState extends ChangeNotifier {
   Role role = Role.none;
   bool mapDark = true;
@@ -90,36 +128,98 @@ class AppState extends ChangeNotifier {
   final String studentName = 'Ananya Sharma';
   final String studentEmail = '210102043@iitg.ac.in';
 
+  // ---------- GPS ----------
+  GpsState gps = GpsState.off;
+  LatLng you = demoYou;
+  StreamSubscription<Position>? _gpsSub;
+
+  /// Asks for location permission once and follows the phone's GPS.
+  /// Off campus (or no permission) the demo location beside Kameng is used.
+  Future<void> startGps() async {
+    if (gps != GpsState.off) return;
+    gps = GpsState.searching;
+    notifyListeners();
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        gps = GpsState.denied;
+        notifyListeners();
+        return;
+      }
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
+      if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) {
+        gps = GpsState.denied;
+        notifyListeners();
+        return;
+      }
+      _gpsSub = Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 5),
+      ).listen(_onPosition, onError: (_) {
+        gps = GpsState.denied;
+        notifyListeners();
+      });
+      _onPosition(await Geolocator.getCurrentPosition());
+    } catch (_) {
+      gps = GpsState.denied;
+      notifyListeners();
+    }
+  }
+
+  void _onPosition(Position p) {
+    final here = LatLng(p.latitude, p.longitude);
+    if (campusBounds.contains(here)) {
+      you = here;
+      gps = GpsState.onCampus;
+    } else {
+      you = demoYou;
+      gps = GpsState.offCampus;
+    }
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _gpsSub?.cancel();
+    super.dispose();
+  }
+
+  /// Location used for "Use my current location".
+  Loc get currentLoc {
+    final h = hostelAt(you);
+    final source = gps == GpsState.onCampus ? 'Detected from your location' : 'Demo location (you’re off campus)';
+    return h != null ? Loc(h, source, covered: true, pos: you) : Loc('Near you', source, covered: false, pos: you);
+  }
+
   final List<Report> reports = [
     Report(
       id: 'r1', speciesId: 'banded_krait', venom: Venom.venomous, place: 'Kameng Hostel', spot: 'back gate',
       note: 'Went under the parked cycles near the back gate, hasn’t come out. Security has been told.',
       reporter: 'Ananya S.', time: DateTime.now().subtract(const Duration(minutes: 9)),
-      pos: const Offset(313, 405), covered: true,
+      pos: const LatLng(26.19068, 91.70186), covered: true,
     ),
     Report(
       id: 'r2', speciesId: 'keelback', venom: Venom.harmless, place: 'Kameng Hostel', spot: 'near the mess hall',
       note: 'Saw it near the mess hall drain this morning, it moved off toward the hedge.',
       reporter: 'Rohit K.', time: DateTime.now().subtract(const Duration(minutes: 32)),
-      pos: const Offset(296, 426), covered: true,
+      pos: const LatLng(26.19016, 91.70140), covered: true,
     ),
     Report(
       id: 'r3', venom: Venom.unsure, place: 'Lake-side Path',
       note: 'Dark snake crossed the path and went into the grass by the lake.',
       reporter: 'Priya D.', time: DateTime.now().subtract(const Duration(minutes: 41)),
-      pos: const Offset(184, 392), covered: false,
+      pos: const LatLng(26.19005, 91.69420), covered: false,
     ),
     Report(
       id: 'r4', speciesId: 'wolf', venom: Venom.harmless, place: 'Kameng Hostel', spot: 'near the parking area',
       note: 'Small banded snake near the bike parking, guard moved it to the green belt.',
       reporter: 'Meghna B.', time: DateTime.now().subtract(const Duration(hours: 1)),
-      pos: const Offset(326, 440), covered: true, safe: true,
+      pos: const LatLng(26.19080, 91.70128), covered: true, safe: true,
     ),
     Report(
       id: 'r5', speciesId: 'rat', venom: Venom.harmless, place: 'Core 3', spot: 'rear stairs',
       note: 'Long snake on the rear stairs, went under the steps.',
       reporter: 'Arjun M.', time: DateTime.now().subtract(const Duration(hours: 2)),
-      pos: const Offset(150, 461), covered: false, safe: true,
+      pos: const LatLng(26.18590, 91.69060), covered: false, safe: true,
     ),
   ];
 
@@ -132,6 +232,8 @@ class AppState extends ChangeNotifier {
     final o = openReports..sort((a, b) => b.time.compareTo(a.time));
     return o.isEmpty ? null : o.first;
   }
+
+  double metresFromYou(LatLng p) => _dist.as(LengthUnit.Meter, you, p);
 
   // ---------- hostel authority ----------
   List<Report> get hostelReports =>
@@ -194,8 +296,7 @@ class AppState extends ChangeNotifier {
   }
 
   Report submit() {
-    final loc = draft.loc ?? detectedLoc;
-    final rnd = Random();
+    final loc = draft.loc ?? currentLoc;
     final r = Report(
       id: 'r${DateTime.now().millisecondsSinceEpoch}',
       speciesId: draft.speciesId,
@@ -203,7 +304,7 @@ class AppState extends ChangeNotifier {
       place: loc.name,
       note: draft.note,
       reporter: 'Ananya S.',
-      pos: loc.pos + Offset(rnd.nextDouble() * 6 - 3, rnd.nextDouble() * 6 - 3),
+      pos: loc.pos,
       covered: loc.covered,
       photoPath: draft.photoPath,
     );
@@ -212,20 +313,24 @@ class AppState extends ChangeNotifier {
     return r;
   }
 
-  /// Place picked from the list. Hostels are covered by their authority.
+  /// Place picked from the list. Hostels use their real position.
   Loc locFromList(String place, bool hostel) {
+    final label = placeLabel(place, hostel);
+    final osmName = place == 'MSH' ? 'Married Scholars Hostel' : '$place Hostel';
+    if (hostel && hostelOutlines.containsKey(osmName)) {
+      return Loc(label, 'Chosen from the list', covered: true, pos: hostelCentre(osmName));
+    }
+    // Other places: approximate spot on campus (demo).
     final rnd = Random(place.hashCode);
-    final pos = hostel && place == 'Kameng'
-        ? const Offset(307, 392)
-        : Offset(60 + rnd.nextDouble() * 280, 260 + rnd.nextDouble() * 260);
-    return Loc(placeLabel(place, hostel), 'Chosen from the list', covered: hostel, pos: pos);
+    final pos = LatLng(campusCenter.latitude + (rnd.nextDouble() - 0.5) * 0.008, campusCenter.longitude + (rnd.nextDouble() - 0.5) * 0.012);
+    return Loc(label, 'Chosen from the list', covered: hostel, pos: pos);
   }
 
   /// Place picked by tapping the map.
-  Loc locFromMap(Offset p) =>
-      kamengZone.contains(p)
-          ? Loc('Kameng Hostel', 'Pinned on the map', covered: true, pos: p)
-          : Loc('Open area', 'Pinned on the map', covered: false, pos: p);
+  Loc locFromMap(LatLng p) {
+    final h = hostelAt(p);
+    return h != null ? Loc(h, 'Pinned on the map', covered: true, pos: p) : Loc('Open area', 'Pinned on the map', covered: false, pos: p);
+  }
 }
 
 class AppScope extends InheritedNotifier<AppState> {

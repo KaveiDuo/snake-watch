@@ -1,7 +1,18 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../data/app_state.dart';
 import '../theme.dart';
+
+/// Shows a snake photo from the app's assets, the phone's storage, or — in the
+/// browser version — the picked file's blob URL.
+Widget photoOf(String path, {BoxFit fit = BoxFit.cover}) {
+  if (path.startsWith('assets/')) return Image.asset(path, fit: fit);
+  if (kIsWeb) return Image.network(path, fit: fit);
+  return Image.file(File(path), fit: fit);
+}
 
 /// Dark screen with the green "top glow" used across the Snake Watch screens.
 class DarkPage extends StatelessWidget {

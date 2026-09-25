@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart' hide Path;
 
 import '../data/app_state.dart';
+import '../data/hostels.dart';
 import '../theme.dart';
 import 'common.dart';
 
@@ -42,13 +45,13 @@ class _PinPainter extends CustomPainter {
   bool shouldRepaint(covariant _PinPainter old) => old.color != color;
 }
 
-/// Real, zoomable campus map: pinch/drag to move, + / − buttons, tap to pick.
-/// Markers are drawn on top of the map so they stay the same size when zooming.
+/// Live campus map (OpenStreetMap tiles). Pinch/drag to move,
+/// + / − to zoom, tap a pin to open it, tap anywhere else to pick that spot.
 class CampusMap extends StatefulWidget {
   final bool dark;
   final List<Report> reports;
-  final Offset? selected;
-  final void Function(Offset mapPoint)? onTapMap;
+  final LatLng? selected;
+  final void Function(LatLng point)? onTapMap;
   final void Function(Report r)? onTapReport;
   final bool showZone;
   final EdgeInsets controlsPadding;
@@ -72,157 +75,160 @@ class CampusMap extends StatefulWidget {
 }
 
 class CampusMapState extends State<CampusMap> with TickerProviderStateMixin {
-  final _tc = TransformationController();
-  late final AnimationController _anim = AnimationController(vsync: this, duration: const Duration(milliseconds: 320));
+  final _map = MapController();
   late final AnimationController _pulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))..repeat();
-  Animation<Matrix4>? _zoomAnim;
-  Size _viewport = Size.zero;
-  double _s0 = 1;
-  bool _placed = false;
+  AnimationController? _move;
 
   @override
   void initState() {
     super.initState();
-    _anim.addListener(() {
-      if (_zoomAnim != null) _tc.value = _zoomAnim!.value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) AppScope.read(context).startGps();
     });
   }
 
   @override
   void dispose() {
-    _anim.dispose();
     _pulse.dispose();
-    _tc.dispose();
+    _move?.dispose();
     super.dispose();
   }
 
-  double get _scale => _tc.value.getMaxScaleOnAxis();
-
-  void _animateTo(Matrix4 target) {
-    _zoomAnim = Matrix4Tween(begin: _tc.value, end: target).animate(CurvedAnimation(parent: _anim, curve: Curves.easeInOut));
-    _anim.forward(from: 0);
+  /// Smoothly moves/zooms the camera.
+  void _animateTo(LatLng dest, double zoom) {
+    _move?.dispose();
+    final cam = _map.camera;
+    final lat = Tween(begin: cam.center.latitude, end: dest.latitude);
+    final lng = Tween(begin: cam.center.longitude, end: dest.longitude);
+    final z = Tween(begin: cam.zoom, end: zoom);
+    final c = AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
+    final a = CurvedAnimation(parent: c, curve: Curves.easeInOut);
+    c.addListener(() => _map.move(LatLng(lat.evaluate(a), lng.evaluate(a)), z.evaluate(a)));
+    _move = c..forward();
   }
 
-  Matrix4 _clamp(Matrix4 m) {
-    final s = m.getMaxScaleOnAxis();
-    final cw = mapSize.width * _s0 * s, ch = mapSize.height * _s0 * s;
-    final t = m.getTranslation();
-    final tx = t.x.clamp(_viewport.width - cw, 0.0);
-    final ty = t.y.clamp(_viewport.height - ch, 0.0);
-    return Matrix4.identity()
-      ..translateByDouble(tx, ty, 0, 1)
-      ..scaleByDouble(s, s, 1, 1);
+  void zoom(double by) {
+    final cam = _map.camera;
+    _animateTo(cam.center, (cam.zoom + by).clamp(14.5, 19.0));
   }
 
-  void zoom(double factor) {
-    final target = (_scale * factor).clamp(1.0, 4.0);
-    final f = target / _scale;
-    final c = Offset(_viewport.width / 2, _viewport.height / 2);
-    final m = Matrix4.identity()
-      ..translateByDouble(c.dx, c.dy, 0, 1)
-      ..scaleByDouble(f, f, 1, 1)
-      ..translateByDouble(-c.dx, -c.dy, 0, 1)
-      ..multiply(_tc.value);
-    _animateTo(_clamp(m));
-  }
-
-  void centerOn(Offset mapPoint) {
-    final s = _scale;
-    final m = Matrix4.identity()
-      ..translateByDouble(_viewport.width / 2 - mapPoint.dx * _s0 * s, _viewport.height / 2 - mapPoint.dy * _s0 * s, 0, 1)
-      ..scaleByDouble(s, s, 1, 1);
-    _animateTo(_clamp(m));
-  }
-
-  Offset _toScreen(Offset mapPoint) => MatrixUtils.transformPoint(_tc.value, mapPoint * _s0);
-  Offset _toMap(Offset screen) => _tc.toScene(screen) / _s0;
+  void centerOn(LatLng p) => _animateTo(p, _map.camera.zoom < 17 ? 17 : _map.camera.zoom);
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, box) {
-      _viewport = box.biggest;
-      _s0 = _viewport.width / mapSize.width;
-      if (!_placed) {
-        _placed = true;
-        final ty = (_viewport.height / 2 - youAreHere.dy * _s0).clamp(_viewport.height - mapSize.height * _s0, 0.0);
-        _tc.value = Matrix4.identity()..translateByDouble(0, ty, 0, 1);
-      }
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Stack(children: [
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTapUp: (d) {
-                final p = _toMap(d.localPosition);
-                // Tapping near a report pin opens it; anywhere else picks the spot.
-                if (widget.onTapReport != null) {
-                  for (final r in widget.reports) {
-                    // Hit area is the pin's head, which sits above the reported spot.
-                    if ((_toScreen(r.pos) - const Offset(0, 20) - d.localPosition).distance < 22) {
-                      widget.onTapReport!(r);
-                      return;
-                    }
-                  }
-                }
-                widget.onTapMap?.call(p);
-              },
-              child: InteractiveViewer(
-                transformationController: _tc,
-                constrained: false,
-                minScale: 1,
-                maxScale: 4,
-                boundaryMargin: EdgeInsets.zero,
-                child: SizedBox(
-                  width: mapSize.width * _s0,
-                  height: mapSize.height * _s0,
-                  child: Image.asset(
-                    widget.dark ? 'assets/images/pick_map_dark.png' : 'assets/images/pick_map_light.png',
-                    fit: BoxFit.fill,
-                    filterQuality: FilterQuality.medium,
-                  ),
+    final s = AppScope.of(context);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Stack(children: [
+        Positioned.fill(
+          child: ColoredBox(
+            color: widget.dark ? const Color(0xFF1A1A1A) : const Color(0xFFEDEBE6),
+            child: FlutterMap(
+              mapController: _map,
+              options: MapOptions(
+                initialCenter: widget.selected ?? const LatLng(26.1888, 91.6962),
+                initialZoom: widget.selected != null ? 17.2 : 15.6,
+                // Open zoomed so every report (and you) fits on screen.
+                initialCameraFit: widget.selected == null && widget.reports.isNotEmpty
+                    ? CameraFit.coordinates(
+                        coordinates: [for (final r in widget.reports) r.pos, s.you],
+                        padding: const EdgeInsets.fromLTRB(40, 90, 60, 80),
+                        maxZoom: 17.5,
+                      )
+                    : null,
+                minZoom: 14.5,
+                maxZoom: 19,
+                cameraConstraint: CameraConstraint.containCenter(bounds: campusBounds),
+                interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
+                onTap: (_, p) => widget.onTapMap?.call(p),
+              ),
+              children: [
+                // Standard OpenStreetMap tiles (free, no key). Night mode
+                // darkens them with flutter_map's dark-mode tile filter.
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'in.iitg.onestop.snake_watch',
+                  maxZoom: 19,
+                  tileBuilder: widget.dark ? darkModeTileBuilder : null,
                 ),
-              ),
-            ),
-          ),
-          // Markers (fixed size, follow the map)
-          Positioned.fill(
-            child: IgnorePointer(
-              child: AnimatedBuilder(
-                animation: Listenable.merge([_tc, _pulse]),
-                builder: (context, _) => Stack(clipBehavior: Clip.none, children: [
-                  if (widget.showZone) _zone(),
-                  _you(),
-                  for (final r in widget.reports) _pin(r),
-                  if (widget.selected != null) ..._selected(widget.selected!),
+                if (widget.showZone)
+                  PolygonLayer(polygons: [
+                    for (final pts in hostelOutlines.values)
+                      Polygon(
+                        points: pts,
+                        color: C.green.withValues(alpha: 0.16),
+                        borderColor: C.green.withValues(alpha: 0.8),
+                        borderStrokeWidth: 1.5,
+                      ),
+                  ]),
+                MarkerLayer(markers: [
+                  Marker(point: s.you, width: 44, height: 44, child: _you(s.gps)),
+                  for (final r in widget.reports)
+                    Marker(
+                      point: r.pos,
+                      width: 48,
+                      height: _pinH + 8,
+                      alignment: Alignment.topCenter,
+                      child: GestureDetector(onTap: () => widget.onTapReport?.call(r), child: _pin(r)),
+                    ),
+                  if (widget.selected != null) ...[
+                    Marker(
+                      point: widget.selected!,
+                      width: 44,
+                      height: 44,
+                      child: Container(
+                        decoration: BoxDecoration(shape: BoxShape.circle, color: C.green.withValues(alpha: 0.18), border: Border.all(color: C.green, width: 1.5)),
+                      ),
+                    ),
+                    Marker(
+                      point: widget.selected!,
+                      width: 30,
+                      height: 39,
+                      alignment: Alignment.topCenter,
+                      child: const LocationPin(color: C.green, width: 30),
+                    ),
+                  ],
                 ]),
-              ),
+              ],
             ),
           ),
-          if (widget.topHint != null) Positioned(left: 10, top: 10, right: 58, child: widget.topHint!),
-          Positioned(
-            right: widget.controlsPadding.right,
-            top: widget.controlsPadding.top,
-            child: Column(children: [
-              _ctl(Icons.add_rounded, () => zoom(1.6)),
-              const SizedBox(height: 6),
-              _ctl(Icons.remove_rounded, () => zoom(1 / 1.6)),
-            ]),
+        ),
+        if (widget.topHint != null) Positioned(left: 10, top: 10, right: 58, child: widget.topHint!),
+        Positioned(
+          right: widget.controlsPadding.right,
+          top: widget.controlsPadding.top,
+          child: Column(children: [
+            _ctl(Icons.add_rounded, () => zoom(1)),
+            const SizedBox(height: 6),
+            _ctl(Icons.remove_rounded, () => zoom(-1)),
+          ]),
+        ),
+        Positioned(
+          right: widget.controlsPadding.right,
+          bottom: widget.controlsPadding.bottom + 14,
+          child: Column(children: [
+            _ctl(s.gps == GpsState.onCampus ? Icons.my_location_rounded : Icons.location_searching_rounded, () {
+              centerOn(s.you);
+              if (s.gps == GpsState.offCampus) toast(context, 'You’re not on campus — showing a demo location near Kameng');
+              if (s.gps == GpsState.denied) toast(context, 'Location is off — showing a demo location near Kameng');
+            }, color: C.blue),
+            if (widget.onToggleTheme != null) ...[
+              const SizedBox(height: 8),
+              _ctl(widget.dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined, widget.onToggleTheme!),
+            ],
+          ]),
+        ),
+        Positioned(
+          right: 4,
+          bottom: 3,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            decoration: BoxDecoration(color: (widget.dark ? Colors.black : Colors.white).withValues(alpha: 0.6), borderRadius: BorderRadius.circular(4)),
+            child: Text('© OpenStreetMap contributors', style: ft(9, color: widget.dark ? C.muted : const Color(0xFF555555))),
           ),
-          Positioned(
-            right: widget.controlsPadding.right,
-            bottom: widget.controlsPadding.bottom,
-            child: Column(children: [
-              _ctl(Icons.my_location_rounded, () => centerOn(youAreHere), color: C.blue),
-              if (widget.onToggleTheme != null) ...[
-                const SizedBox(height: 8),
-                _ctl(widget.dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined, widget.onToggleTheme!),
-              ],
-            ]),
-          ),
-        ]),
-      );
-    });
+        ),
+      ]),
+    );
   }
 
   Widget _ctl(IconData icon, VoidCallback onTap, {Color? color}) => Material(
@@ -238,37 +244,15 @@ class CampusMapState extends State<CampusMap> with TickerProviderStateMixin {
         ),
       );
 
-  Widget _zone() {
-    final a = _toScreen(kamengZone.topLeft), b = _toScreen(kamengZone.bottomRight);
-    return Positioned.fromRect(
-      rect: Rect.fromPoints(a, b),
-      child: Container(
-        decoration: BoxDecoration(
-          color: C.green.withValues(alpha: 0.08),
-          border: Border.all(color: C.green.withValues(alpha: 0.55), width: 1.2),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        alignment: Alignment.topLeft,
-        padding: const EdgeInsets.all(4),
-        child: Text('Kameng', style: ft(9.5, w: 700, color: C.green)),
-      ),
-    );
-  }
-
   static const _pinW = 26.0, _pinH = _pinW * 1.3;
 
   Widget _pin(Report r) {
-    final s = _toScreen(r.pos);
     final c = pinColor(r);
-    final t = _pulse.value;
-    return Positioned(
-      left: s.dx - 24,
-      top: s.dy - _pinH,
-      child: SizedBox(
-        width: 48,
-        height: _pinH + 8,
-        child: Stack(alignment: Alignment.topCenter, clipBehavior: Clip.none, children: [
-          // Ripple on the ground under open reports
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (_, _) {
+        final t = _pulse.value;
+        return Stack(alignment: Alignment.topCenter, clipBehavior: Clip.none, children: [
           if (!r.safe)
             Positioned(
               top: _pinH - (4 + 5 * t),
@@ -282,43 +266,29 @@ class CampusMapState extends State<CampusMap> with TickerProviderStateMixin {
               ),
             ),
           LocationPin(color: c, width: _pinW),
-        ]),
-      ),
+        ]);
+      },
     );
   }
 
-  Widget _you() {
-    final s = _toScreen(youAreHere);
-    return Positioned(
-      left: s.dx - 20,
-      top: s.dy - 20,
+  Widget _you(GpsState gps) {
+    final live = gps == GpsState.onCampus;
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: C.blue.withValues(alpha: live ? 0.18 : 0.10),
+        border: Border.all(color: C.blue.withValues(alpha: live ? 0.45 : 0.25)),
+      ),
+      alignment: Alignment.center,
       child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: C.blue.withValues(alpha: 0.18), border: Border.all(color: C.blue.withValues(alpha: 0.45))),
-        alignment: Alignment.center,
-        child: Container(
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: C.blue, border: Border.all(color: Colors.white, width: 3)),
+        width: 16,
+        height: 16,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: live ? C.blue : C.blue.withValues(alpha: 0.6),
+          border: Border.all(color: Colors.white, width: 3),
         ),
       ),
     );
-  }
-
-  List<Widget> _selected(Offset p) {
-    final s = _toScreen(p);
-    return [
-      Positioned(
-        left: s.dx - 22,
-        top: s.dy - 22,
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: C.green.withValues(alpha: 0.18), border: Border.all(color: C.green, width: 1.5)),
-        ),
-      ),
-      Positioned(left: s.dx - 15, top: s.dy - 39, child: const LocationPin(color: C.green, width: 30)),
-    ];
   }
 }

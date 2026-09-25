@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:snake_watch/data/app_state.dart';
 import 'package:snake_watch/main.dart';
 
@@ -16,9 +17,9 @@ void main() {
     expect(s.hostelOpen, before - 1);
   });
 
-  test('Only taps inside Kameng count as covered', () {
+  test('Taps inside a hostel are covered by that hostel; elsewhere is an open area', () {
     final s = AppState();
-    expect(s.locFromMap(const Offset(300, 390)).covered, isTrue);
-    expect(s.locFromMap(const Offset(100, 200)).covered, isFalse);
+    expect(s.locFromMap(const LatLng(26.19043, 91.70156)).name, 'Kameng Hostel');
+    expect(s.locFromMap(const LatLng(26.1865, 91.6900)).covered, isFalse);
   });
 }

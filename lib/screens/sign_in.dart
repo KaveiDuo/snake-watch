@@ -25,7 +25,17 @@ class OnestopBackground extends StatelessWidget {
                 colors: [C.onestopGreen, C.onestopMint],
               ),
             ),
-            child: SafeArea(child: child),
+            // Fills the screen on normal phones and scrolls on very short ones.
+            child: SafeArea(
+              child: LayoutBuilder(
+                builder: (context, box) => SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: box.maxHeight),
+                    child: IntrinsicHeight(child: child),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       );

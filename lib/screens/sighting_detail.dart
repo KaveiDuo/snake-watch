@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 
@@ -16,9 +15,9 @@ class SightingDetailScreen extends StatelessWidget {
     AppScope.of(context); // rebuild when the report is marked safe
     final r = report;
     final photo = r.photoPath != null
-        ? (r.photoPath!.startsWith('assets/') ? Image.asset(r.photoPath!, fit: BoxFit.cover) : Image.file(File(r.photoPath!), fit: BoxFit.cover))
+        ? photoOf(r.photoPath!)
         : (r.sp != null ? Image.asset(r.sp!.photo, fit: BoxFit.cover) : null);
-    final d = (youAreHere - r.pos).distance * 3.2; // demo: map pixels → metres
+    final d = AppScope.read(context).metresFromYou(r.pos);
     return Scaffold(
       backgroundColor: C.bg,
       body: ListView(padding: EdgeInsets.zero, children: [
