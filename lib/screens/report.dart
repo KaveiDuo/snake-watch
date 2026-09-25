@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../data/app_state.dart';
 import '../data/places.dart';
@@ -793,24 +792,6 @@ class _ReportedScreenState extends State<ReportedScreen> with SingleTickerProvid
     super.dispose();
   }
 
-  Future<void> _whatsApp() async {
-    final r = widget.report;
-    final text =
-        'To: ${r.place} authority\n\n'
-        'SNAKE REPORT · ${r.venom == Venom.venomous
-            ? 'VENOMOUS'
-            : r.venom == Venom.harmless
-            ? 'NON-VENOMOUS'
-            : 'NOT SURE'}\n\n'
-        '${r.title} reported at ${r.where}.\n'
-        '${r.note.isEmpty ? '' : '\nNote: “${r.note}”\n'}'
-        '\nReported just now via Onestop by a student.';
-    final uri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(text)}');
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && mounted) {
-      toast(context, 'WhatsApp isn’t installed on this phone');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final r = widget.report;
@@ -848,33 +829,33 @@ class _ReportedScreenState extends State<ReportedScreen> with SingleTickerProvid
               style: ft(14.5, color: C.muted, height: 1.45),
             ),
             const Spacer(flex: 4),
-            if (r.covered) ...[
-              Btn('Also send it on WhatsApp', kind: BtnKind.whatsapp, icon: Icons.chat_rounded, onTap: _whatsApp),
-              const SizedBox(height: 8),
-              Text('Optional · goes only to the ${r.place} authority', style: ft(11.5, color: C.faint)),
-            ] else
-              Panel(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.schedule_rounded, color: C.green, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Open area · no hostel authority', style: ft(13.5, w: 600)),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Nobody needs a WhatsApp alert for this spot. The pin clears itself from Snake Watch after 2–3 days.',
-                            style: ft(12.5, color: C.muted, height: 1.4),
-                          ),
-                        ],
-                      ),
+            // Who handles it: the hostel's authority (in their console), or
+            // nobody for open areas, where the pin expires by itself.
+            Panel(
+              border: r.covered ? const Color(0xFF245A36) : null,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(r.covered ? Icons.verified_user_outlined : Icons.schedule_rounded, color: C.green, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(r.covered ? 'Sent to the ${r.place} authority' : 'Open area · no hostel authority', style: ft(13.5, w: 600)),
+                        const SizedBox(height: 4),
+                        Text(
+                          r.covered
+                              ? 'It’s in their Snake Watch console now. They’ll check the area and mark it safe, and you’ll be notified.'
+                              : 'No hostel authority covers this spot. The pin clears itself from Snake Watch after 2–3 days.',
+                          style: ft(12.5, color: C.muted, height: 1.4),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+            ),
             const SizedBox(height: 14),
             Row(
               children: [

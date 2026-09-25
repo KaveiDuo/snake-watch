@@ -131,7 +131,7 @@ class Panel extends StatelessWidget {
   }
 }
 
-enum BtnKind { primary, danger, ghost, whatsapp }
+enum BtnKind { primary, danger, ghost }
 
 class Btn extends StatelessWidget {
   final String label;
@@ -149,9 +149,6 @@ class Btn extends StatelessWidget {
     switch (kind) {
       case BtnKind.primary:
         bg = C.green;
-        fg = C.greenInk;
-      case BtnKind.whatsapp:
-        bg = const Color(0xFF25D366);
         fg = C.greenInk;
       case BtnKind.danger:
         bg = const Color(0xFFE5382D);

@@ -22,4 +22,14 @@ void main() {
     expect(s.locFromMap(const LatLng(26.19043, 91.70156)).name, 'Kameng Hostel');
     expect(s.locFromMap(const LatLng(26.1865, 91.6900)).covered, isFalse);
   });
+
+  test("A student's report inside Kameng reaches the Kameng authority's console", () {
+    final s = AppState();
+    final before = s.hostelOpen;
+    s.startDraft(at: s.locFromMap(const LatLng(26.19043, 91.70156)));
+    s.setVenom(Venom.venomous);
+    final r = s.submit();
+    expect(s.hostelReports, contains(r));
+    expect(s.hostelOpen, before + 1);
+  });
 }
