@@ -130,10 +130,13 @@ class _PickedCard extends StatelessWidget {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(color: loc.covered ? C.greenSoft : const Color(0xFF2A1E0B), shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: loc.outside ? C.redSoft : (loc.covered ? C.greenSoft : const Color(0xFF2A1E0B)),
+                  shape: BoxShape.circle,
+                ),
                 child: Icon(
-                  loc.covered ? Icons.location_on_outlined : Icons.park_outlined,
-                  color: loc.covered ? C.green : C.amber,
+                  loc.outside ? Icons.block_rounded : (loc.covered ? Icons.location_on_outlined : Icons.park_outlined),
+                  color: loc.outside ? C.redText : (loc.covered ? C.green : C.amber),
                   size: 21,
                 ),
               ),
@@ -145,7 +148,9 @@ class _PickedCard extends StatelessWidget {
                     Text(loc.name, style: ft(16, w: 700)),
                     const SizedBox(height: 2),
                     Text(
-                      loc.covered
+                      loc.outside
+                          ? 'Snake Watch only takes reports inside the campus. Move the pin onto campus.'
+                          : loc.covered
                           ? 'Inside ${loc.name} premises · the ${loc.name} authority covers this spot'
                           : 'Open area · pin only. No authority is notified; students nearby still see it',
                       style: ft(12.5, color: C.muted, height: 1.35),
@@ -163,7 +168,7 @@ class _PickedCard extends StatelessWidget {
           const SizedBox(height: 10),
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: Btn('Report here', kind: BtnKind.danger, icon: Icons.add_rounded, height: 48, onTap: onReport),
+            child: Btn('Report here', kind: BtnKind.danger, icon: Icons.add_rounded, height: 48, onTap: loc.outside ? null : onReport),
           ),
         ],
       ),

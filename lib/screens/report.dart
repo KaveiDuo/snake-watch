@@ -748,8 +748,14 @@ class _PickOnMapScreenState extends State<PickOnMapScreen> {
                     Container(
                       width: 46,
                       height: 46,
-                      decoration: BoxDecoration(color: _loc.covered ? C.greenSoft : const Color(0xFF2A1E0B), shape: BoxShape.circle),
-                      child: Icon(_loc.covered ? Icons.location_on_outlined : Icons.park_outlined, color: _loc.covered ? C.green : C.amber),
+                      decoration: BoxDecoration(
+                        color: _loc.outside ? C.redSoft : (_loc.covered ? C.greenSoft : const Color(0xFF2A1E0B)),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _loc.outside ? Icons.block_rounded : (_loc.covered ? Icons.location_on_outlined : Icons.park_outlined),
+                        color: _loc.outside ? C.redText : (_loc.covered ? C.green : C.amber),
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -759,7 +765,9 @@ class _PickOnMapScreenState extends State<PickOnMapScreen> {
                           Text(_loc.name, style: ft(17, w: 700)),
                           const SizedBox(height: 3),
                           Text(
-                            _loc.covered
+                            _loc.outside
+                                ? 'Snake Watch only takes reports inside the campus. Move the pin onto campus.'
+                                : _loc.covered
                                 ? 'Inside ${_loc.name} premises · the ${_loc.name} authority covers this spot'
                                 : 'Open area · pin only. No authority is notified; students nearby still see it',
                             style: ft(12.5, color: C.muted, height: 1.4),
@@ -770,7 +778,7 @@ class _PickOnMapScreenState extends State<PickOnMapScreen> {
                   ],
                 ),
                 const SizedBox(height: 14),
-                Btn('Use this spot', onTap: () => Navigator.pop(context, _loc)),
+                Btn('Use this spot', onTap: _loc.outside ? null : () => Navigator.pop(context, _loc)),
               ],
             ),
           ),

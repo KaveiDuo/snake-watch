@@ -34,6 +34,15 @@ void main() {
     expect(field.name, 'Cricket Ground');
   });
 
+  test('Pins outside the IIT Guwahati campus cannot be reported', () {
+    final s = AppState();
+    final gnrc = s.locFromMap(const LatLng(26.20214, 91.69395)); // GNRC hospital, north of campus
+    expect(gnrc.outside, isTrue);
+    expect(s.locFromMap(const LatLng(26.1825, 91.6990)).outside, isTrue); // main road south of campus
+    expect(s.locFromMap(const LatLng(26.19043, 91.70156)).outside, isFalse); // Kameng Hostel
+    expect(s.locFromMap(const LatLng(26.184588, 91.696582)).outside, isFalse); // KV
+  });
+
   test('Open-area pins are named after the road, field or lake they are on', () {
     final s = AppState();
     expect(s.locFromMap(const LatLng(26.192957, 91.69016)).name, 'Suryamukhi Road');

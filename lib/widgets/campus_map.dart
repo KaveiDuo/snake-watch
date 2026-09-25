@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart' hide Path;
 import '../data/app_state.dart';
 import '../data/kv_buildings.dart';
 import '../data/quarters_buildings.dart';
+import '../data/zones.dart';
 import '../theme.dart';
 import 'common.dart';
 
@@ -46,6 +47,71 @@ class _PinPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _PinPainter old) => old.color != color;
+}
+
+/// Small name labels for the quarters and KV buildings we draw ourselves
+/// (OpenStreetMap's tiles label everything else). Shown only when zoomed in.
+class _BuildingLabels extends StatelessWidget {
+  final bool dark;
+  const _BuildingLabels({required this.dark});
+
+  static const _named = {
+    'A-type Quarters',
+    'B-type Quarters',
+    'C-type Quarters',
+    'D-type Quarters',
+    'E-type Quarters',
+    'F-type Quarters',
+    'Professors Quarters',
+    'Tower Block',
+    'B-type Community Hall',
+    'D-type Community Hall',
+    'Kendriya Vidyalaya (KV)',
+    'KV Staff Quarters',
+  };
+
+  static final List<(String, LatLng)> _labels = [
+    for (final z in campusZones)
+      if (_named.contains(z.name))
+        for (final o in z.outlines)
+          (
+            z.name == 'Kendriya Vidyalaya (KV)' ? 'Kendriya Vidyalaya' : z.name,
+            LatLng(
+              o.map((p) => p.latitude).reduce((a, b) => a + b) / o.length,
+              o.map((p) => p.longitude).reduce((a, b) => a + b) / o.length,
+            ),
+          ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    if (MapCamera.of(context).zoom < 16.3) return const SizedBox.shrink();
+    final halo = dark ? Colors.black : Colors.white;
+    return MarkerLayer(
+      markers: [
+        for (final (name, at) in _labels)
+          Marker(
+            point: at,
+            width: 130,
+            height: 26,
+            child: IgnorePointer(
+              child: Center(
+                child: Text(
+                  name,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  style: ft(10, w: 600, color: dark ? const Color(0xFFBDB2A8) : const Color(0xFF6B5B4E), height: 1.1).copyWith(
+                    shadows: [
+                      for (final o in const [Offset(1, 1), Offset(-1, -1), Offset(1, -1), Offset(-1, 1)]) Shadow(color: halo, offset: o),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 /// Live campus map (OpenStreetMap tiles). Pinch/drag to move,
@@ -173,12 +239,10 @@ class CampusMapState extends State<CampusMap> with TickerProviderStateMixin {
                           borderStrokeWidth: 1,
                         ),
                       for (final pts in kvWaterShapes)
-                        Polygon(
-                          points: pts,
-                          color: widget.dark ? const Color(0xFF1F3440) : const Color(0xFFAAD3DF),
-                        ),
+                        Polygon(points: pts, color: widget.dark ? const Color(0xFF1F3440) : const Color(0xFFAAD3DF)),
                     ],
                   ),
+                  _BuildingLabels(dark: widget.dark),
                   MarkerLayer(
                     markers: [
                       Marker(point: s.you, width: 44, height: 44, child: _you(s.gps)),

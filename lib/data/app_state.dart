@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart' show LatLngBounds;
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
+import 'campus_boundary.dart';
 import 'open_areas.dart';
 import 'places.dart';
 import 'species.dart';
@@ -108,6 +109,9 @@ String openAreaName(LatLng p) {
   return 'Open area';
 }
 
+/// Inside the IIT Guwahati campus boundary (or on a building we know about).
+bool onCampus(LatLng p) => _inPolygon(p, campusBoundary) || zoneAt(p) != null;
+
 LatLng zoneCentre(String name) {
   final pts = campusZones.firstWhere((z) => z.name == name).outlines.first;
   return LatLng(
@@ -125,7 +129,10 @@ class Loc {
   final String source;
   final bool covered;
   final LatLng pos;
-  const Loc(this.name, this.source, {required this.covered, this.pos = demoYou});
+
+  /// True when the spot is outside the IIT Guwahati campus (can't be reported).
+  final bool outside;
+  const Loc(this.name, this.source, {required this.covered, this.pos = demoYou, this.outside = false});
   String get authority => '$name authority';
 }
 
@@ -425,6 +432,9 @@ class AppState extends ChangeNotifier {
   /// Place picked by tapping the map: a hostel or campus building if the pin
   /// is on its premises, otherwise an open area (no authority).
   Loc locFromMap(LatLng p) {
+    if (!onCampus(p)) {
+      return Loc('Outside IIT Guwahati campus', 'Pinned on the map', covered: false, pos: p, outside: true);
+    }
     final z = zoneAt(p);
     return z != null
         ? Loc(z.name, 'Pinned on the map', covered: true, pos: p)
