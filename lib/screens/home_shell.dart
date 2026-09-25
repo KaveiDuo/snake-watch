@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../data/app_state.dart';
 import '../theme.dart';
@@ -231,7 +232,7 @@ class _HomeTab extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            const Text('🍲', style: TextStyle(fontSize: 16)),
+                            SvgPicture.asset('assets/icons/food.svg', width: 22, height: 22),
                             const SizedBox(width: 8),
                             Text('Food', style: ft(17, w: 700)),
                           ],
@@ -256,7 +257,7 @@ class _HomeTab extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            const Text('🚪', style: TextStyle(fontSize: 16)),
+                            SvgPicture.asset('assets/icons/gate_log.svg', width: 22, height: 22),
                             const SizedBox(width: 8),
                             Text('Gatelog', style: ft(17, w: 700)),
                           ],
@@ -291,19 +292,20 @@ class _HomeTab extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             childAspectRatio: 0.82,
             children: [
-              for (final (emoji, label) in [
+              // Each icon is an emoji or the name of an Onestop icon in assets/icons/.
+              for (final (icon, label) in [
                 ('🐍', 'Snake Watch'),
-                ('🚪', 'GateLog'),
-                ('🪙', 'Library Token'),
-                ('👤', 'Contacts'),
-                ('🚕', 'Cab Sharing'),
-                ('🏪', 'SAC Room Booking'),
-                ('📫', 'Complaints'),
-                ('🧰', 'Lost and Found'),
-                ('🛍', 'Buy and Sell'),
-                ('🏆', 'GC Score Board'),
-                ('🏥', 'Medical Section'),
-                ('🌐', 'LAN'),
+                ('gate_log.svg', 'GateLog'),
+                ('lib_token.svg', 'Library Token'),
+                ('contacts.svg', 'Contacts'),
+                ('cab_sharing.svg', 'Cab Sharing'),
+                ('irbs.svg', 'SAC Room Booking'),
+                ('complaints.svg', 'Complaints'),
+                ('lnf.svg', 'Lost and Found'),
+                ('bns.svg', 'Buy and Sell'),
+                ('gc.svg', 'GC Score Board'),
+                ('medical.svg', 'Medical Section'),
+                ('LAN.svg', 'LAN'),
               ])
                 InkWell(
                   borderRadius: BorderRadius.circular(14),
@@ -315,9 +317,15 @@ class _HomeTab extends StatelessWidget {
                     }
                   },
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(emoji, style: const TextStyle(fontSize: 30)),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: icon.endsWith('.svg')
+                            ? SvgPicture.asset('assets/icons/$icon', fit: BoxFit.contain)
+                            : Center(child: Text(icon, style: const TextStyle(fontSize: 34))),
+                      ),
                       const SizedBox(height: 6),
                       Text(
                         label,
