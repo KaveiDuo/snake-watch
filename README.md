@@ -13,7 +13,10 @@ This is a design demo built from the Figma prototype. It uses example data only:
 flutter pub get
 flutter build apk --release
 flutter build web --release --base-href /snake-watch/app/
+cp web/sw_cleanup.js build/web/flutter_service_worker.js && rm build/web/sw_cleanup.js
 ```
+
+The web build doesn't use an offline service worker, so phones always load the latest version. The second web command replaces Flutter's worker with one that removes old caches.
 
 On the original Windows PC use `build_apk.ps1`, which works around a Java temp-folder issue.
 
