@@ -240,16 +240,22 @@ class Tag extends StatelessWidget {
   );
 }
 
+/// Deep, saturated map-pin colours so pins stand out on the light map.
+const pinVenomous = Color(0xFFD92D20);
+const pinHarmless = Color(0xFF0E9384);
+const pinUnsure = Color(0xFFDC7900);
+const pinDropped = Color(0xFF16A34A);
+
 /// Pin colour on the map for a report.
 Color pinColor(Report r) {
-  if (r.safe) return const Color(0xFF8A8A8A);
+  if (r.safe) return const Color(0xFF6B6B6B);
   switch (r.venom) {
     case Venom.venomous:
-      return const Color(0xFFFF453A);
+      return pinVenomous;
     case Venom.unsure:
-      return C.amber;
+      return pinUnsure;
     case Venom.harmless:
-      return const Color(0xFF2DD4BF);
+      return pinHarmless;
   }
 }
 

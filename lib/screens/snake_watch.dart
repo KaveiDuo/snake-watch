@@ -8,7 +8,7 @@ import 'report.dart';
 import 'sighting_detail.dart';
 
 /// Campus map. Tapping the map only drops a pin (tap again to move it); the
-/// report starts when you press "Report here".
+/// report starts when you press "Report snake sighting".
 class SnakeWatchScreen extends StatefulWidget {
   const SnakeWatchScreen({super.key});
   @override
@@ -163,7 +163,7 @@ class _PickedCard extends StatelessWidget {
           const SizedBox(height: 10),
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: Btn('Report here', kind: BtnKind.danger, icon: Icons.add_rounded, height: 48, onTap: loc.outside ? null : onReport),
+            child: Btn('Report snake sighting', kind: BtnKind.danger, icon: Icons.add_rounded, height: 48, onTap: loc.outside ? null : onReport),
           ),
         ],
       ),
@@ -196,7 +196,7 @@ class _Legend extends StatelessWidget {
   const _Legend({required this.dark});
   @override
   Widget build(BuildContext context) {
-    final items = [('Venomous', const Color(0xFFFF453A)), ('Harmless', const Color(0xFF2DD4BF)), ('Unsure', C.amber), ('You', C.blue)];
+    final items = [('Venomous', pinVenomous), ('Harmless', pinHarmless), ('Unsure', pinUnsure), ('You', C.blue)];
     return Align(
       alignment: Alignment.bottomLeft,
       child: Container(

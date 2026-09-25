@@ -260,7 +260,7 @@ class CampusMapState extends State<CampusMap> with TickerProviderStateMixin {
                           width: 30,
                           height: 39,
                           alignment: Alignment.topCenter,
-                          child: const LocationPin(color: C.green, width: 30),
+                          child: const LocationPin(color: pinDropped, width: 30),
                         ),
                     ],
                   ),
