@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart' hide Path;
 
 import '../data/app_state.dart';
 import '../data/kv_buildings.dart';
+import '../data/quarters_buildings.dart';
 import '../theme.dart';
 import 'common.dart';
 
@@ -156,6 +157,14 @@ class CampusMapState extends State<CampusMap> with TickerProviderStateMixin {
                   // same style as the map's other buildings.
                   PolygonLayer(
                     polygons: [
+                      // Faculty & staff quarters: a little more see-through than KV.
+                      for (final pts in quartersBuildingShapes)
+                        Polygon(
+                          points: pts,
+                          color: (widget.dark ? const Color(0xFF3B3835) : const Color(0xFFD9D0C9)).withValues(alpha: 0.6),
+                          borderColor: (widget.dark ? const Color(0xFF4A4541) : const Color(0xFFC4B6AB)).withValues(alpha: 0.6),
+                          borderStrokeWidth: 1,
+                        ),
                       for (final pts in kvBuildingShapes)
                         Polygon(
                           points: pts,
