@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../data/app_state.dart';
 import '../theme.dart';
@@ -376,6 +377,42 @@ class _HomeTab extends StatelessWidget {
                 ),
             ],
           ),
+          const SizedBox(height: 18),
+          Text('Quick Links', style: ft(22, w: 700)),
+          const SizedBox(height: 12),
+          // Only links whose real address is known open a page; the rest aren't in the demo.
+          for (final (label, url) in [
+            ('Bus Route', null),
+            ('GateLog Feedback', null),
+            ('Academic SSO', 'https://online.iitg.ac.in/sso'),
+            ('Academic Calendar', null),
+            ('Placement Stats', null),
+            ('Guest House', null),
+            ('SWC Website', 'https://swc.iitg.ac.in'),
+            ('QuickLink', null),
+          ])
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Panel(
+                radius: 16,
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+                onTap: () async {
+                  if (url == null) return _soon(context, label);
+                  if (!await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication) && context.mounted) {
+                    toast(context, 'Could not open $label');
+                  }
+                },
+                child: Row(
+                  children: [
+                    Expanded(child: Text(label, style: ft(15.5, w: 600))),
+                    Transform.rotate(
+                      angle: -0.785,
+                      child: const Icon(Icons.arrow_forward_rounded, color: C.muted, size: 16),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
