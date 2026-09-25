@@ -15,6 +15,50 @@ class HomeShell extends StatefulWidget {
   State<HomeShell> createState() => _HomeShellState();
 }
 
+/// Floating SOS button with a soft red glow that slowly pulses.
+class _GlowingSos extends StatefulWidget {
+  final VoidCallback onTap;
+  const _GlowingSos({required this.onTap});
+  @override
+  State<_GlowingSos> createState() => _GlowingSosState();
+}
+
+class _GlowingSosState extends State<_GlowingSos> with SingleTickerProviderStateMixin {
+  late final _pulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (context, child) {
+        final t = Curves.easeInOut.transform(_pulse.value);
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(color: C.red.withValues(alpha: 0.5 + 0.3 * t), blurRadius: 18 + 16 * t, spreadRadius: 2 + 6 * t),
+            ],
+          ),
+          child: child,
+        );
+      },
+      child: FloatingActionButton(
+        backgroundColor: C.red,
+        elevation: 0,
+        shape: const CircleBorder(),
+        onPressed: widget.onTap,
+        child: Text('SOS', style: ft(15, w: 800, color: Colors.white)),
+      ),
+    );
+  }
+}
+
 class _HomeShellState extends State<HomeShell> {
   int _tab = 0;
 
@@ -25,13 +69,7 @@ class _HomeShellState extends State<HomeShell> {
       backgroundColor: C.bg,
       body: IndexedStack(index: _tab, children: tabs),
       floatingActionButton: _tab == 0
-          ? FloatingActionButton(
-              backgroundColor: C.red,
-              elevation: 8,
-              shape: const CircleBorder(),
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SosScreen())),
-              child: Text('SOS', style: ft(15, w: 800, color: Colors.white)),
-            )
+          ? _GlowingSos(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SosScreen())))
           : null,
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
