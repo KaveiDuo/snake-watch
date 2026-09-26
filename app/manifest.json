@@ -1,6 +1,6 @@
 {
-    "name": "snake_watch",
-    "short_name": "snake_watch",
+    "name": "Onestop · Snake Alert",
+    "short_name": "Snake Alert",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
