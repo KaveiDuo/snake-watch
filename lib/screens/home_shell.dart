@@ -130,7 +130,7 @@ class _NotInDemo extends StatelessWidget {
             Text(name, style: ft(22, w: 700)),
             const SizedBox(height: 8),
             Text(
-              '$name isn’t part of this Snake Watch demo.',
+              '$name isn’t part of this Snake Alert demo.',
               textAlign: TextAlign.center,
               style: ft(14, color: C.muted),
             ),
@@ -186,7 +186,7 @@ class _HomeTab extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          // Snake Watch alert card
+          // Snake Alert alert card
           Panel(
             border: s.activeCount > 0 ? const Color(0xFF3A2E14) : C.line,
             padding: EdgeInsets.zero,
@@ -206,7 +206,7 @@ class _HomeTab extends StatelessWidget {
                             children: [
                               const Text('🐍', style: TextStyle(fontSize: 17)),
                               const SizedBox(width: 8),
-                              Text('Snake Watch', style: ft(17, w: 700)),
+                              Text('Snake Alert', style: ft(17, w: 700)),
                               Text('  ·  ', style: ft(13, color: C.muted)),
                               Text(
                                 s.activeCount > 0 ? '${s.activeCount} ACTIVE' : 'ALL CLEAR',
@@ -333,7 +333,7 @@ class _HomeTab extends StatelessWidget {
             children: [
               // Each icon is an emoji or the name of an Onestop icon in assets/icons/.
               for (final (icon, label) in [
-                ('🐍', 'Snake Watch'),
+                ('🐍', 'Snake Alert'),
                 ('gate_log.svg', 'GateLog'),
                 ('lib_token.svg', 'Library Token'),
                 ('contacts.svg', 'Contacts'),
@@ -349,7 +349,7 @@ class _HomeTab extends StatelessWidget {
                 InkWell(
                   borderRadius: BorderRadius.circular(14),
                   onTap: () {
-                    if (label == 'Snake Watch') {
+                    if (label == 'Snake Alert') {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const SnakeWatchScreen()));
                     } else {
                       _soon(context, label);

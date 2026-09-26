@@ -20,7 +20,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final items = <_Item>[
       for (final r in s.reports)
         _Item(
-          'SNAKE WATCH',
+          'SNAKE ALERT',
           r.time,
           r.safe ? 'Area marked safe' : (r.venom == Venom.venomous ? 'Venomous snake reported' : 'Snake sighting reported'),
           r.safe
@@ -53,7 +53,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
-                for (final f in ['All', 'Snake Watch', 'Cab Sharing', 'Gatelog'])
+                for (final f in ['All', 'Snake Alert', 'Cab Sharing', 'Gatelog'])
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(
@@ -100,7 +100,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ),
                 const SizedBox(height: 6),
                 Text(
-                  'Snake Watch alerts can be turned off in Profile › Notification preferences.',
+                  'Snake Alert alerts can be turned off in Profile › Notification preferences.',
                   textAlign: TextAlign.center,
                   style: ft(11.5, color: C.faint),
                 ),

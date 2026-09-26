@@ -31,7 +31,7 @@ class _SnakeWatchScreenState extends State<SnakeWatchScreen> {
     final picked = _picked;
     return DarkPage(
       header: AppHeader(
-        'Snake Watch',
+        'Snake Alert',
         subtitle: s.activeCount == 1 ? '1 active report on campus' : '${s.activeCount} active reports on campus',
       ),
       body: Padding(
@@ -144,7 +144,7 @@ class _PickedCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       loc.outside
-                          ? 'Snake Watch only takes reports inside the campus. Move the pin onto campus.'
+                          ? 'Snake Alert only takes reports inside the campus. Move the pin onto campus.'
                           : loc.covered
                           ? 'Inside ${loc.name} premises · the ${loc.name} authority covers this spot'
                           : 'Open area · pin only. No authority is notified; students nearby still see it',

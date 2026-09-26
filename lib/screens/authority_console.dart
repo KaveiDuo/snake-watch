@@ -221,7 +221,7 @@ class AuthorityProfile extends StatelessWidget {
             lines: ['Hostel authority · ${s.authorityHostel}'],
           ),
           const SizedBox(height: 22),
-          Text('Snake Watch · ${s.authorityHostel}', style: ft(17, w: 600)),
+          Text('Snake Alert · ${s.authorityHostel}', style: ft(17, w: 600)),
           const SizedBox(height: 12),
           Panel(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),

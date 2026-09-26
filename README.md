@@ -1,6 +1,6 @@
-# Onestop · Snake Watch (demo)
+# Onestop · Snake Alert (demo)
 
-A standalone demo of the **Snake Watch** add-on for IIT Guwahati's Onestop app: report snake sightings on a campus map, see nearby reports, and let the hostel authority mark areas safe.
+A standalone demo of the **Snake Alert** add-on for IIT Guwahati's Onestop app: report snake sightings on a campus map, see nearby reports, and let the hostel authority mark areas safe.
 
 - **Open it in your browser:** https://kaveiduo.github.io/snake-watch/
 - **Android app (APK):** https://github.com/KaveiDuo/snake-watch/releases/latest/download/SnakeWatch.apk

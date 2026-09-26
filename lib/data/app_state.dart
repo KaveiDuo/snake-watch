@@ -122,6 +122,10 @@ LatLng zoneCentre(String name) {
 
 enum Venom { venomous, nonVenomous, unsure }
 
+/// Phone number the "Call the authority" button dials after a report. Demo
+/// only: every hostel and building authority uses the same number for now.
+const authorityPhone = '8277992838';
+
 enum Role { none, student, authority }
 
 class Loc {

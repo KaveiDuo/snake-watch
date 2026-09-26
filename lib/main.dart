@@ -21,7 +21,7 @@ class SnakeWatchApp extends StatelessWidget {
     return AppScope(
       state: state,
       child: MaterialApp(
-        title: 'Onestop · Snake Watch',
+        title: 'Onestop · Snake Alert',
         debugShowCheckedModeBanner: false,
         theme: buildTheme(),
         // On a wide browser window, show the app at phone width in the middle.

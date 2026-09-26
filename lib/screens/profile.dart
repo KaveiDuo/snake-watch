@@ -223,9 +223,9 @@ class ProfileActions extends StatelessWidget {
           'About Us',
           () => showAboutDialog(
             context: context,
-            applicationName: 'Onestop · Snake Watch',
+            applicationName: 'Onestop · Snake Alert',
             applicationVersion: 'Demo 1.0',
-            applicationLegalese: 'A standalone demo of the Snake Watch add-on for the Onestop app. Uses example data only.',
+            applicationLegalese: 'A standalone demo of the Snake Alert add-on for the Onestop app. Uses example data only.',
           ),
         ),
         b(Icons.bug_report_outlined, 'Bug/Feature Request', () => toast(context, 'Thanks! Feedback isn’t sent in this demo')),

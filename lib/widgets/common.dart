@@ -14,7 +14,7 @@ Widget photoOf(String path, {BoxFit fit = BoxFit.cover}) {
   return Image.file(File(path), fit: fit);
 }
 
-/// Dark screen with the green "top glow" used across the Snake Watch screens.
+/// Dark screen with the green "top glow" used across the Snake Alert screens.
 class DarkPage extends StatelessWidget {
   final Widget? header;
   final Widget body;

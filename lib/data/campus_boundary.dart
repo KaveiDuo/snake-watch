@@ -1,7 +1,7 @@
 import 'package:latlong2/latlong.dart';
 
 /// IIT Guwahati campus boundary (OpenStreetMap, © OpenStreetMap contributors).
-/// Snake Watch only accepts reports inside it.
+/// Snake Alert only accepts reports inside it.
 const campusBoundary = <LatLng>[
   LatLng(26.1841867, 91.6878388),
   LatLng(26.1844508, 91.6879127),

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../data/app_state.dart';
 import '../data/places.dart';
@@ -768,7 +769,7 @@ class _PickOnMapScreenState extends State<PickOnMapScreen> {
                           const SizedBox(height: 3),
                           Text(
                             _loc.outside
-                                ? 'Snake Watch only takes reports inside the campus. Move the pin onto campus.'
+                                ? 'Snake Alert only takes reports inside the campus. Move the pin onto campus.'
                                 : _loc.covered
                                 ? 'Inside ${_loc.name} premises · the ${_loc.name} authority covers this spot'
                                 : 'Open area · pin only. No authority is notified; students nearby still see it',
@@ -899,7 +900,7 @@ class _ReportedScreenState extends State<ReportedScreen> with TickerProviderStat
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Text(
-                    'Students nearby have been notified and can see your pin on Snake Watch.',
+                    'Students nearby have been notified and can see your pin on Snake Alert.',
                     textAlign: TextAlign.center,
                     style: ft(14.5, color: C.muted, height: 1.45),
                   ),
@@ -922,7 +923,7 @@ class _ReportedScreenState extends State<ReportedScreen> with TickerProviderStat
                             const SizedBox(height: 4),
                             Text(
                               r.covered
-                                  ? 'It’s in their Snake Watch console now. They’ll check the area and mark it safe, and you’ll be notified.'
+                                  ? 'It’s in their Snake Alert console now. They’ll check the area and mark it safe, and you’ll be notified.'
                                   : 'No authority is notified for open areas. Students nearby can see your pin, and it clears itself after 2–3 days.',
                               style: ft(12.5, color: C.muted, height: 1.4),
                             ),
@@ -932,7 +933,20 @@ class _ReportedScreenState extends State<ReportedScreen> with TickerProviderStat
                     ],
                   ),
                 ),
-                const SizedBox(height: 14),
+                if (r.covered) ...[
+                  const SizedBox(height: 12),
+                  Btn(
+                    'Call the authority now',
+                    icon: Icons.call_rounded,
+                    height: 50,
+                    onTap: () async {
+                      if (!await launchUrl(Uri.parse('tel:$authorityPhone')) && context.mounted) {
+                        toast(context, 'Could not open the dialler');
+                      }
+                    },
+                  ),
+                ],
+                const SizedBox(height: 10),
                 Row(
                   children: [
                     Expanded(
@@ -941,7 +955,7 @@ class _ReportedScreenState extends State<ReportedScreen> with TickerProviderStat
                     const SizedBox(width: 10),
                     Expanded(
                       child: Btn(
-                        'Snake Watch',
+                        'Snake Alert',
                         kind: BtnKind.ghost,
                         height: 48,
                         onTap: () {
